@@ -1,16 +1,15 @@
-// Package groups gets the lists of users in a particular group or set of
-// groups, and in the case of multiple groups will remove duplicate names.
-package groups
+package main
 
 import (
 	//"github.com/ctdk/spqr/users"
 	"errors"
+	"fmt"
 	"sort"
 )
 
 /*
-func GetUsers(groups [][]string) ([]*users.UserInfo, error) {
-	userList, err := RemoveDupeUsers(groups)
+func getUsers(groups [][]string) ([]*users.UserInfo, error) {
+	userList, err := removeDupeUsers(groups)
 	_ = userList
 	if err != nil {
 		return nil, err
@@ -19,7 +18,7 @@ func GetUsers(groups [][]string) ([]*users.UserInfo, error) {
 }
 */
 
-func RemoveDupeUsers(groups [][]string) ([]string, error) {
+func removeDupeUsers(groups [][]string) ([]string, error) {
 	var list []string
 
 	if len(groups) == 1 { // just one group
@@ -72,4 +71,18 @@ func RemoveDupeUsers(groups [][]string) ([]string, error) {
 func delTwoPosElements(pos int, skip int, strs []string) []string {
 	strs = append(strs[:pos], strs[pos+skip:]...)
 	return strs
+}
+
+func convertUsersInterfaceSlice(u []interface{}) ([]string, error) {
+	l := len(u)
+	users := make([]string, l)
+	for i, v := range u {
+		s, ok := v.(string)
+		if !ok {
+			err := fmt.Errorf("%v was supposed to be a string, but was actually %T", v)
+			return nil, err
+		}
+		users[i] = s
+	}
+	return users, nil
 }

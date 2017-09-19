@@ -44,7 +44,7 @@ func main() {
 			break
 		}
 		fmt.Printf("key prefix or event, probably (don't care about the other possibilities)\n")
-		handleIncoming(incoming)
+		handleIncoming(consulClient, incoming)
 	default:
 		fmt.Printf("Not anything we're interested in: %T\n", incoming)
 	}
@@ -88,7 +88,7 @@ func configureVault() (*vault.Client, error) {
 func configureConsul() (*consul.Client, error) {
 	conf := consul.DefaultConfig()
 	conf.Scheme = "http"
-	conf.Address = "meluhha.local:8500"
+	conf.Address = "localhost:8500"
 	c, err := consul.NewClient(conf)
 	if err != nil {
 		return nil, err

@@ -10,12 +10,12 @@ import (
 const DefaultShell = "/bin/bash"
 const DefaultHomeBase = "/home"
 
-type UserAction uint8
+type UserAction string
 
 const (
-	NullAction UserAction = iota
-	Create
-	Disable
+	NullAction UserAction = "null"
+	Create = "create"
+	Disable = "disable"
 )
 
 type User struct {
@@ -32,7 +32,7 @@ func Get(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	u := &User{osUser,nil,""}
+	u := &User{osUser,nil,"", NullAction}
 	err = u.fillInUser()
 
 	if err != nil {
