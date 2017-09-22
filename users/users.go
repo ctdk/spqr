@@ -33,7 +33,7 @@ func Get(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	u := &User{osUser,nil,"", NullAction}
+	u := &User{osUser, nil, "", NullAction, false}
 	err = u.fillInUser()
 
 	if err != nil {
@@ -53,5 +53,5 @@ func (u *User) Disable() error {
 }
 
 func (u *User) Groups() []string {
-	ids := 
+	return []string{}
 }

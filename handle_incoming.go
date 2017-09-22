@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ctdk/spqr/users"
+	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
 	"encoding/base64"
 	"encoding/json"
@@ -22,7 +23,7 @@ var handleDesc = map[uint8]string{
 
 func handleIncoming(c *consul.Client, keys []interface{}) {
 	var handlingType uint8
-	var groupLists [][]string
+	var groupLists [][]*groups.Member
 
 	for _, k := range keys {
 		switch k := k.(type) {
@@ -94,7 +95,7 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 	switch handlingType {
 	case keyPrefix:
 		fmt.Printf("groups: %v\n", groupLists)
-		if u2get, err := removeDupeUsers(groupLists); err != nil {
+		if u2get, err := groups.RemoveDupeUsers(groupLists); err != nil {
 			log.Println(err)
 		} else {
 			fmt.Printf("cleaned up user list: %v\n", u2get)

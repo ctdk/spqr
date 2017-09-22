@@ -8,19 +8,24 @@ import (
 	"sort"
 )
 
-/*
-func GetUsers(groups [][]string) ([]*users.UserInfo, error) {
-	userList, err := RemoveDupeUsers(groups)
-	_ = userList
-	if err != nil {
-		return nil, err
-	}
-	return nil, err
+type Member struct {
+	Username string `json:"username"`
+	Status string `json:"status"`
 }
-*/
 
-func RemoveDupeUsers(groups [][]string) ([]string, error) {
-	var list []string
+const (
+	Enabled = "enabled"
+	Disabled = "disabled"
+)
+
+type GroupMembers []*Member
+
+func (gm GroupMembers) Len() int { return len(gm) }
+func (gm GroupMembers) Swap(i, j int) { gm[i], gm[j] = gm[j], gm[i] }
+func (gm GroupMembers) Less(i, j int) bool { return gm[i].Username < gm[j].Username }
+
+func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
+	var list []*Member
 
 	if len(groups) == 1 { // just one group
 		list = groups[0]
@@ -32,7 +37,7 @@ func RemoveDupeUsers(groups [][]string) ([]string, error) {
 		for _, y := range groups {
 			listCap += len(y)
 		}
-		list = make([]string, 0, listCap)
+		list = make([]*Member, 0, listCap)
 		for _, l := range groups {
 			list = append(list, l...)
 		}
@@ -40,7 +45,7 @@ func RemoveDupeUsers(groups [][]string) ([]string, error) {
 
 	// Remove the dupes now. Even just one group can have duplicate entries,
 	// so snip them out regardless of list length.
-	sort.Strings(list)
+	sort.Sort(GroupMembers(list))
 
 	// borrowing from goiardi some here
 	for i, u := range list {
@@ -53,7 +58,7 @@ func RemoveDupeUsers(groups [][]string) ([]string, error) {
 			if i+j >= len(list) {
 				break
 			}
-			if u == list[i+j] {
+			if u.Username == list[i+j].Username {
 				j++
 				s++
 			} else {
@@ -63,13 +68,22 @@ func RemoveDupeUsers(groups [][]string) ([]string, error) {
 		if s == 0 {
 			continue
 		}
+		if u.Status != Enabled {
+			for z := i+1; z < (i + s) - 1; z++ {
+				if list[z].Status == "Enabled" {
+					u.Status = "Enabled"
+					break
+				}
+			}
+		}
+
 		list = delTwoPosElements(i+1, s, list)
 	}
 	return list, nil
 }
 
 // borrowing from some goiardi work here too
-func delTwoPosElements(pos int, skip int, strs []string) []string {
-	strs = append(strs[:pos], strs[pos+skip:]...)
-	return strs
+func delTwoPosElements(pos int, skip int, gm []*Member) []*Member {
+	gm = append(gm[:pos], gm[pos+skip:]...)
+	return gm
 }

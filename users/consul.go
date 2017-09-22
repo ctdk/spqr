@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
 	"log"
 	"strings"
@@ -14,7 +15,7 @@ var UserNotFound error = errors.New("That user was not found")
 // temporary base here
 const userKeyPrefix = "org/default/users"
 
-type userInfo struct {
+type UserInfo struct {
 	Username string `json:"username"`
 	Name string `json:"name"`
 	Groups []string `json:"groups"`
@@ -25,18 +26,18 @@ type userInfo struct {
 
 type UserConsulClient struct {
 	*consul.Client
-	userList []string
-	info []*userInfo
+	userList []*groups.Member
+	info []*UserInfo
 }
 
 func NewUserConsulClient(c *consul.Client) *UserConsulClient {
-	return &UserConsulClient{c, []string{}, []*userInfo{},}
+	return &UserConsulClient{c, []*groups.Member{}, []*UserInfo{},}
 }
 
 // get user information out of consul, get any that are present on the
-func (client *UserConsulClient) GetUsers(userList []string) ([]*User, error) {
+func (client *UserConsulClient) GetUsers(userList []*groups.Member) ([]*User, error) {
 	log.Println("in GetUsers")
-	uinfo := make([]*userInfo, 0, len(userList))
+	uinfo := make([]*UserInfo, 0, len(userList))
 	client.userList = userList
 	client.info = uinfo
 	err := client.fetchInfo()
@@ -50,11 +51,11 @@ func (client *UserConsulClient) GetUsers(userList []string) ([]*User, error) {
 	return nil, err
 }
 
-func (ui *userInfo) populateUser() (*User, error) {
+func (ui *UserInfo) populateUser() (*User, error) {
 	u, err := Get(ui.Username)
 	if err != nil { 
 		// The user wasn't found
-		
+		return nil, err
 	} else {
 		// check for fields that have changed
 		if u.Name != ui.Name {
@@ -66,10 +67,11 @@ func (ui *userInfo) populateUser() (*User, error) {
 			u.changed = true
 		}
 	}
+	return u, nil
 }
 
 func (ui *UserInfo) compareGroups(curGroups []string) bool {
-
+	return false
 }
 
 func (c *UserConsulClient) UpdateUsers(userGaggle []*User) error {
@@ -78,16 +80,21 @@ func (c *UserConsulClient) UpdateUsers(userGaggle []*User) error {
 
 func (c *UserConsulClient) fetchInfo() error {
 	kv := c.KV()
-	for _, name := range c.userList {
+	for _, member := range c.userList {
+		name := member.Username
 		kval, _, err := kv.Get(strings.Join([]string{userKeyPrefix, name}, "/"), nil)
 		if err != nil {
 			return err
 		}
-		uInfo := new(userInfo)
+		uInfo := new(UserInfo)
 		err = json.Unmarshal(kval.Value, &uInfo)
 		if err != nil {
 			log.Printf("raw data was: '%s'", string(kval.Value))
 			return err
+		}
+		log.Printf("uInfo status: %s group member status: %s", uInfo.Action, member.Status)
+		if member.Status == groups.Disabled {
+			uInfo.Action = Disable
 		}
 		fmt.Printf("got a user info: %+v\n", uInfo)
 		c.info = append(c.info, uInfo)
