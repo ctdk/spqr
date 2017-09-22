@@ -4,6 +4,8 @@ package groups
 
 import (
 	//"github.com/ctdk/spqr/users"
+	"fmt"
+	"log"
 	"errors"
 	"sort"
 )
@@ -47,8 +49,15 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 	// so snip them out regardless of list length.
 	sort.Sort(GroupMembers(list))
 
+	var listSort string
+	for w, q := range list {
+		listSort = fmt.Sprintf("%s %d %+v", listSort, w, q)
+	}
+	log.Printf("sorted list: %v", listSort)
+
 	// borrowing from goiardi some here
 	for i, u := range list {
+		log.Printf("user in RemoveDupeUsers: %+v", u)
 		if i > len(list) {
 			break
 		}
@@ -70,8 +79,8 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 		}
 		if u.Status != Enabled {
 			for z := i+1; z < (i + s) - 1; z++ {
-				if list[z].Status == "Enabled" {
-					u.Status = "Enabled"
+				if list[z].Status == Enabled {
+					u.Status = Enabled
 					break
 				}
 			}
@@ -79,6 +88,11 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 
 		list = delTwoPosElements(i+1, s, list)
 	}
+	listSort = ""
+	for w, q := range list {
+		listSort = fmt.Sprintf("%s %d %+v", listSort, w, q)
+	}
+	log.Printf("the sorted and de-duped list: %v", listSort)
 	return list, nil
 }
 

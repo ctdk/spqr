@@ -1,0 +1,6 @@
+{
+  "name": "bar",
+  "full_name": "Bar Fooerson",
+  "groups": ["sudo"],
+  "action": "create"
+}

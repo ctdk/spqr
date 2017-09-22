@@ -1,0 +1,8 @@
+{
+  "name": "foo",
+  "full_name": "Foo Fooerson",
+  "groups": [],
+  "shell": "/bin/zsh",
+  "home_dir": "/var/lib/foo",
+  "action": "create"
+}

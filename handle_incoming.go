@@ -77,6 +77,7 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 			}
 			switch handlingType {
 			case keyPrefix:
+				log.Printf("j[\"users\"]: %+v", j["users"])
 				convUsers, err := convertUsersInterfaceSlice(j["users"].([]interface{}))
 				if err != nil {
 					log.Println(err)

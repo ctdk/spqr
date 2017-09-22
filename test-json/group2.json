@@ -1,0 +1,1 @@
+{ "users": [ { "username": "foo", "status": "disabled" }, { "username": "quux", "status": "enabled" } ] }
