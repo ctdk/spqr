@@ -2,18 +2,21 @@ package users
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	consul "github.com/hashicorp/consul/api"
 	"log"
 	"strings"
 )
 
+var UserNotFound error = errors.New("That user was not found")
+
 // temporary base here
 const userKeyPrefix = "org/default/users"
 
 type userInfo struct {
+	Username string `json:"username"`
 	Name string `json:"name"`
-	FullName string `json:"full_name"`
 	Groups []string `json:"groups"`
 	HomeDir string `json:"home_dir"`
 	Shell string `json:"shell"`
@@ -45,6 +48,28 @@ func (client *UserConsulClient) GetUsers(userList []string) ([]*User, error) {
 	}
 
 	return nil, err
+}
+
+func (ui *userInfo) populateUser() (*User, error) {
+	u, err := Get(ui.Username)
+	if err != nil { 
+		// The user wasn't found
+		
+	} else {
+		// check for fields that have changed
+		if u.Name != ui.Name {
+			u.Name = ui.Name
+			u.changed = true
+		}
+		if ui.HomeDir != "" && (u.HomeDir != ui.HomeDir) {
+			u.HomeDir = ui.HomeDir
+			u.changed = true
+		}
+	}
+}
+
+func (ui *UserInfo) compareGroups(curGroups []string) bool {
+
 }
 
 func (c *UserConsulClient) UpdateUsers(userGaggle []*User) error {

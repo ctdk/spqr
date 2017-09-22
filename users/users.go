@@ -23,6 +23,7 @@ type User struct {
 	SSHKeys []string
 	Shell string
 	Action UserAction
+	changed bool
 }
 
 // Get a user, if it exists.
@@ -49,4 +50,8 @@ func (u *User) Disable() error {
 	// At the moment, removing their ssh keys is probably sufficient. Down
 	// the road, killing all their processes may be in order.
 	return u.deleteAuthKeys()
+}
+
+func (u *User) Groups() []string {
+	ids := 
 }
