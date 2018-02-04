@@ -11,27 +11,27 @@ import (
 	"strings"
 )
 
-func osCreateUser(userName string, fullName string, homeDir string, shell string, groups []string) (*User, error) {
+func (u *User) osCreateUser() error {
 	useraddPath, err := exec.LookPath("useradd")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	useraddArgs := []string{"-m", "-U", "-s", shell}
+	useraddArgs := []string{"-m", "-U", "-s", u.Shell}
 
-	if fullName != "" {
-		useraddArgs = append(useraddArgs, []string{"-c", fullName}...)
+	if u.Name != "" {
+		useraddArgs = append(useraddArgs, []string{"-c", u.Name}...)
 	}
 	
-	if len(groups) > 0 {
-		useraddArgs = append(useraddArgs, []string{"-G", strings.Join(groups, ",")}...)
+	if len(u.Groups) > 0 {
+		useraddArgs = append(useraddArgs, []string{"-G", strings.Join(u.Groups, ",")}...)
 	}
 
-	if homeDir != "" {
-		useraddArgs = append(useraddArgs, "-d", homeDir)
+	if u.HomeDir != "" {
+		useraddArgs = append(useraddArgs, "-d", u.HomeDir)
 	}
 
-	useraddArgs = append(useraddArgs, userName)
+	useraddArgs = append(useraddArgs, u.Username)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -43,14 +43,15 @@ func osCreateUser(userName string, fullName string, homeDir string, shell string
 	err = useradd.Run()
 	if err != nil {
 		ferr := fmt.Errorf("Error received while trying to create user: %s -- error from useradd program: %s", err.Error(), stderr.String())	
-		return nil, ferr
+		return ferr
 	}
 
-	u, err := Get(userName)
+	nu, err := Get(u.Username)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
+	u = nu
 
-	return u, nil
+	return nil
 }

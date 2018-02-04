@@ -3,12 +3,10 @@
 package users
 
 import (
+	"fmt"
 	"log"
 	"os/user"
 )
-
-const DefaultShell = "/bin/bash"
-const DefaultHomeBase = "/home"
 
 type UserAction string
 
@@ -23,7 +21,9 @@ type User struct {
 	SSHKeys []string
 	Shell string
 	Action UserAction
+	Groups []string
 	changed bool
+	notExist bool
 }
 
 // Get a user, if it exists.
@@ -33,7 +33,7 @@ func Get(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	u := &User{osUser, nil, "", NullAction, false}
+	u := &User{osUser, nil, "", NullAction, nil, false, false}
 	err = u.fillInUser()
 
 	if err != nil {
@@ -52,6 +52,18 @@ func (u *User) Disable() error {
 	return u.deleteAuthKeys()
 }
 
-func (u *User) Groups() []string {
-	return []string{}
+// ProcessUsers updates or create users as needed.
+func ProcessUsers(userList []*User) error {
+	for _, u := range userList {
+		if u.notExist {
+			err := u.osCreateUser()
+			if err != nil {
+				uerr := fmt.Errorf("Error attempting to create user %s: %s", u.Username, err.Error())
+				return uerr
+			}
+		} else {
+
+		}
+	}
+	return nil
 }

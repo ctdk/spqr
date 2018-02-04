@@ -7,6 +7,7 @@ import (
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
 	"log"
+	"os/user"
 	"strings"
 )
 
@@ -22,6 +23,7 @@ type UserInfo struct {
 	HomeDir string `json:"home_dir"`
 	Shell string `json:"shell"`
 	Action UserAction `json:"action"`
+	DoesNotExist bool `json:"does_not_exist"`
 }
 
 type UserConsulClient struct {
@@ -47,8 +49,31 @@ func (client *UserConsulClient) GetUsers(userList []*groups.Member) ([]*User, er
 	for _, u := range client.info {
 		fmt.Printf("a user info: %+v\n", u)
 	}
+	usarz := make([]*User, 0, len(client.info))
+	for _, uEntry := range client.info {
+		if uEntry.DoesNotExist {
+			// A user needs to be created.
+			n := new(user.User)
+			newUser := &User{n, nil, uEntry.Shell, uEntry.Action, uEntry.Groups, true, true}
+			newUser.Username = uEntry.Username
+			newUser.Name = uEntry.Name
+			newUser.HomeDir = uEntry.HomeDir
+			newUser, err := New(uEntry.Username, uEntry.Name, uEntry.HomeDir, uEntry.Shell, uEntry.Action, uEntry.Groups)
+			if err != nil {
+				return nil, err
+			}
+			usarz = append(usarz, newUser)
+		} else {
+			// user already exists
+			uObj, err := Get(uEntry.Username)
+			if err != nil {
+				return nil, err
+			}
+			usarz = append(usarz, uObj)
+		}
+	}
 
-	return nil, err
+	return usarz, err
 }
 
 func (ui *UserInfo) populateUser() (*User, error) {
@@ -92,10 +117,14 @@ func (c *UserConsulClient) fetchInfo() error {
 			log.Printf("raw data was: '%s'", string(kval.Value))
 			return err
 		}
+		if uInfo.Username == "" {
+			uInfo.Username = uInfo.Name
+		}
 		log.Printf("uInfo status: %s group member status: %s", uInfo.Action, member.Status)
 		if member.Status == groups.Disabled {
 			uInfo.Action = Disable
 		}
+		uInfo.DoesNotExist = !userExists(uInfo.Username)
 		fmt.Printf("got a user info: %+v\n", uInfo)
 		c.info = append(c.info, uInfo)
 	}

@@ -22,6 +22,9 @@ const authKeyPerm = 0644
 const maxTmpDirNumBase int64 = 0xFFFFFFFF
 var maxTmpDirNum *big.Int
 
+const DefaultShell = "/bin/bash"
+const DefaultHomeBase = "/home"
+
 func init() {
 	maxTmpDirNum = big.NewInt(maxTmpDirNumBase)
 }
@@ -151,7 +154,7 @@ func (u *User) authorizedKeyPath() string {
 	return path.Join(u.HomeDir, ".ssh", "authorized_keys")
 }
 
-func New(userName string, fullName string, homeDir string, shell string, groups []string, keys []string) (*User, error) {
+func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
 	if homeDir == "" {
 		homeDir = path.Join(DefaultHomeBase, userName)
 	}
@@ -166,7 +169,14 @@ func New(userName string, fullName string, homeDir string, shell string, groups 
 		return nil, err
 	}
 
-	u, err := osCreateUser(userName, fullName, homeDir, shell, groups)
+	n := new(user.User)
+	newUser := &User{n, nil, shell, action, groups, true, true}
+	newUser.Username = userName
+	newUser.Name = fullName
+	newUser.HomeDir = homeDir
+
+	/***** Move this elsewhere
+	err := newUser.osCreateUser()
 	log.Printf("user '%s' home: '%s' is? %+v", u.Username, u.HomeDir, u)
 	if err != nil {
 		return nil, err
@@ -177,7 +187,9 @@ func New(userName string, fullName string, homeDir string, shell string, groups 
 	if err != nil {
 		return nil, err
 	}
-	return u, nil
+	******/
+
+	return newUser, nil
 }
 
 func (u *User) createTempAuthKeyFile(baseDir string) (*os.File, error) {
@@ -218,4 +230,12 @@ func (u *User) getUidGid() (int, int, error) {
 		return 0, 0, err
 	}
 	return uid, gid, nil
+}
+
+func userExists(userName string) bool {
+	u, _ := user.Lookup(userName)
+	if u != nil {
+		return true
+	}
+	return false
 }

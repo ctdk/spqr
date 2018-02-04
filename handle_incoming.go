@@ -101,9 +101,14 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 		} else {
 			fmt.Printf("cleaned up user list: %v\n", u2get)
 			uc := users.NewUserConsulClient(c)
-			_, e := uc.GetUsers(u2get)
+			usarz, e := uc.GetUsers(u2get)
 			if e != nil {
 				log.Println(e)
+			}
+			log.Printf("usarz? %+v", usarz)
+			perr := users.ProcessUsers(usarz)
+			if perr != nil {
+				log.Println(perr)
 			}
 		}
 	default:

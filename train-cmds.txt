@@ -1,0 +1,87 @@
+    1  ls
+    2  ls src/
+    3  mount
+    4  ls
+    5  cd src/github.com/ctdk/spqr
+    6  ls
+    7  go build
+    8  ls
+    9  ./spqr 
+   10  ./spqr -h
+   11  echo $GOROOT
+   12  echo $GOPATH
+   13  go build .
+   14  ifconfig
+   15  /sbin/ifconfig
+   16  apt-get update
+   17  apt-cache search ifconfig
+   18  go version
+   19  apt-cache search nettools
+   20  ip
+   21  man ip
+   22  ip -4
+   23  ip address
+   24  ping 192.168.10.103
+   25  ./spqr 
+   26  apt-get install telnet
+   27  telnet localhost 8500
+   28  go build
+   29  ./spqr 
+   30  go build
+   31  ./spqr 
+   32  telnet 192.168.10.103 8500
+   33  telnet 192.168.10.103 8500
+   34  ./spqr 
+   35  rm spqr
+   36  go build
+   37  ./spqr 
+   38  consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   39  apt-cache search consul
+   40  cd
+   41  wget https://releases.hashicorp.com/consul/1.0.3/consul_1.0.3_linux_amd64.zip?_ga=2.215825172.281655902.1517588362-753835721.1509555474
+   42  wget https://releases.hashicorp.com/consul/1.0.3/consul_1.0.3_linux_amd64.zip
+   43  ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   44  ls
+   45  rm consul_1.0.3_linux_amd64.zip*
+   46  ls
+   47  pwd
+   48  cd /go/src/github.com/ctdk/spqr
+   49  ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   50  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   51  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   52  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   53  go build
+   54  go build
+   55  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   56  go build
+   57  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   58  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   59  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=organization/default/groups /go/src/github.com/ctdk/spqr/spqr
+   60  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   61  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   62  go build
+   63  go build
+   64  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   65  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   66  ls /home
+   67  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   68  history
+   69  go build
+   70  CONSUL_HTTP_ADDR=http://192.168.10.103:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   71  CONSUL_HTTP_ADDR=http://192.168.10.105:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   72  ls /home/
+   73  CONSUL_HTTP_ADDR=http://192.168.10.105:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   74  go build
+   75  go build
+   76  go build
+   77  go build
+   78  CONSUL_HTTP_ADDR=http://192.168.10.105:8500 ./consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+   79  go build
+   80  go build
+   81  history
+   82  history > train-cmds.txt
+
+
+----
+consul agent -dev -bind=$IPADDR -advertise=$IPADDR -client=$IPADDR
+docker run --name spqr-dev -v /Users/c-jeremy.bingham/go/src:/go/src -v /Users/c-jeremy.bingham/consul-linux:/consul -it golang /bin/bash
