@@ -89,7 +89,7 @@ func configureVault() (*vault.Client, error) {
 func configureConsul() (*consul.Client, error) {
 	conf := consul.DefaultConfig()
 	conf.Scheme = "http"
-	conf.Address = "10.10.26.55:8500"
+	conf.Address = "10.10.40.43:8500"
 	c, err := consul.NewClient(conf)
 	if err != nil {
 		return nil, err

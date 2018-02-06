@@ -35,6 +35,7 @@ func Get(username string) (*User, error) {
 	}
 	u := &User{osUser, nil, "", NullAction, nil, false, false}
 	err = u.fillInUser()
+	u.Groups, _ = u.GroupIds()
 
 	if err != nil {
 		return nil, err

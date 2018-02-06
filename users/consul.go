@@ -131,4 +131,3 @@ func (c *UserConsulClient) fetchInfo() error {
 
 	return nil
 }
-

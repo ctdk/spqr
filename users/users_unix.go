@@ -65,7 +65,7 @@ func (u *User) fillInUser() error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
