@@ -26,6 +26,12 @@ type User struct {
 	notExist bool
 }
 
+// New creates a new user. It's a pass-through to an OS-specific function, see
+// the appropriate one for details.
+func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
+	return osNew(userName, fullName, homeDir, shell, action, groups)
+}
+
 // Get a user, if it exists.
 func Get(username string) (*User, error) {
 	osUser, err := user.Lookup(username)
@@ -48,22 +54,58 @@ func (u *User) Update() error {
 }
 
 func (u *User) Disable() error {
-	// At the moment, removing their ssh keys is probably sufficient. Down
-	// the road, killing all their processes may be in order.
-	return u.deleteAuthKeys()
+	err := u.setNoLogin()
+	if err != nil {
+		return err
+	}
+
+	err = u.deleteAuthKeys()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func MakeNewGroup(groupName string) error {
+	return osMakeNewGroup(groupName)
 }
 
 // ProcessUsers updates or create users as needed.
 func ProcessUsers(userList []*User) error {
+	existingGroups := make(map[string]bool)
+
 	for _, u := range userList {
-		if u.notExist {
+		// Check for OS groups and create them if needed
+		for _, g := u.Groups {
+			if !existingGroups[g] {
+				gPresent, _ := user.LookupGroup(g)
+				if gPresent == nil {
+					err := MakeNewGroup(g)
+					if err != nil {
+						return nil
+					}
+				}
+				existingGroups[g] = true
+			}
+		}
+
+		if u.notExist && u.Action != Disable {
 			err := u.osCreateUser()
 			if err != nil {
 				uerr := fmt.Errorf("Error attempting to create user %s: %s", u.Username, err.Error())
 				return uerr
 			}
+		} else if u.Action == Disable {
+			err := u.Disable()
+			if err != nil {
+				return err
+			}
 		} else {
-
+			err := u.Update()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

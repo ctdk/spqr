@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"strconv"
@@ -154,7 +155,7 @@ func (u *User) authorizedKeyPath() string {
 	return path.Join(u.HomeDir, ".ssh", "authorized_keys")
 }
 
-func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
+func osNew(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
 	if homeDir == "" {
 		homeDir = path.Join(DefaultHomeBase, userName)
 	}
@@ -238,4 +239,27 @@ func userExists(userName string) bool {
 		return true
 	}
 	return false
+}
+// chsh might not be appropriate for dwarwin at least
+func (u *User) setNoLogin() {
+	chshPath, err := exec.LookPath("chsh")
+	if err != nil {
+		return err
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	// make sure RHEL/CentOS or some other sort of unix doesn't use
+	// something else besides /sbin/nologin for setting an account to
+	// be unable to login.
+	chsh := exec.Command(chshPath, "-s", "/sbin/nologin", u.Username)
+	chsh.Stdout = &stdout
+	chsh.Stderr = &stderr
+	err = chsh.Run()
+	if err != nil {
+		return fmt.Errorf("Error received trying to user %s to nologin: %s %s", u.Username, err.Error(), stderr.String())
+	}
+
+	return nil
 }

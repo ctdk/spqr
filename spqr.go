@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ctdk/spqr/config"
 	_ "github.com/ctdk/spqr/users"
 	consul "github.com/hashicorp/consul/api"
 	vault "github.com/hashicorp/vault/api"
@@ -12,6 +13,8 @@ import (
 
 // TODO: provide more configuration options
 func main() {
+	config.ParseConfigOptions()
+
 	// configure vault
 	vaultClient, err := configureVault()
 	if err != nil {
@@ -23,7 +26,6 @@ func main() {
 	}
 	log.Println("connected to consul")
 	_ = vaultClient
-	_ = consulClient
 
 	// JSON incoming!
 	var incoming interface{}
@@ -88,8 +90,9 @@ func configureVault() (*vault.Client, error) {
 
 func configureConsul() (*consul.Client, error) {
 	conf := consul.DefaultConfig()
-	conf.Scheme = "http"
-	conf.Address = "10.10.40.43:8500"
+
+	conf.Address = config.Config.ConsulHttpAddr
+
 	c, err := consul.NewClient(conf)
 	if err != nil {
 		return nil, err

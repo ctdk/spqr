@@ -55,3 +55,21 @@ func (u *User) osCreateUser() error {
 
 	return nil
 }
+
+func osMakeNewGroup(groupName string) error {
+	groupaddPath, err := exec.LookPath("groupadd")
+	if err != nil {
+		return err
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	
+	groupadd := exec.Command(groupaddPath, groupName)
+	groupadd.Stdout = &stdout
+	groupadd.Stderr = &stderr
+	err = groupadd.Run()
+	if err != nil {
+		return fmt.Errorf("Error received trying to create group %s: %s %s", groupName, err.Error(), stderr.String())
+	}
+	return nil
+}
