@@ -147,3 +147,25 @@ func (c *UserExtDataClient) fetchInfo() error {
 
 	return nil
 }
+
+/*
+	s, err := c.Logical().Read(strings.Join([]string{userVaultPrefix, "foo"}, "/"))
+	if err != nil {
+		fmt.Printf("err: %s\n", err.Error())
+	}
+	fmt.Printf("secret? %+v\n", s)
+	data := s.Data
+	fmt.Printf("hm: %T %v\n", data["ssh_keys"], data["ssh_keys"])
+	j := make(map[string]interface{})
+	e := json.Unmarshal([]byte(data["ssh_keys"].(string)), &j)
+	if e != nil {
+		fmt.Printf("e: %s\n", e.Error())
+	}
+	fmt.Printf("j: %T %+v\n", j, j)
+
+###
+secret? &{RequestID:9003c419-c5e1-4192-ad93-4e932c425c65 LeaseID: LeaseDuration:2764800 Renewable:false Data:map[ssh_keys:{"authorized_keys": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local"]}] Warnings:[] Auth:<nil> WrapInfo:<nil>}
+hm: string {"authorized_keys": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local"]}
+j: map[string]interface {} map[authorized_keys:[ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local]]
+###
+*/
