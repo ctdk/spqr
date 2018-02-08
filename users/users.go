@@ -18,7 +18,7 @@ const (
 
 type User struct {
 	*user.User
-	SSHKeys []string
+	AuthorizedKeys []string
 	Shell string
 	Action UserAction
 	Groups []string
@@ -77,7 +77,7 @@ func ProcessUsers(userList []*User) error {
 
 	for _, u := range userList {
 		// Check for OS groups and create them if needed
-		for _, g := u.Groups {
+		for _, g := range u.Groups {
 			if !existingGroups[g] {
 				gPresent, _ := user.LookupGroup(g)
 				if gPresent == nil {

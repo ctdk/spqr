@@ -27,6 +27,7 @@ func main() {
 	log.Println("connected to consul")
 	_ = vaultClient
 
+
 	// JSON incoming!
 	var incoming interface{}
 	dec := json.NewDecoder(os.Stdin)
@@ -47,7 +48,7 @@ func main() {
 			break
 		}
 		fmt.Printf("key prefix or event, probably (don't care about the other possibilities)\n")
-		handleIncoming(consulClient, incoming)
+		handleIncoming(consulClient, vaultClient, incoming)
 	default:
 		fmt.Printf("Not anything we're interested in: %T\n", incoming)
 	}

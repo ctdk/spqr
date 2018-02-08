@@ -18,7 +18,7 @@ const userKeyPrefix = "org/default/users"
 
 type UserInfo struct {
 	Username string `json:"username"`
-	Name string `json:"name"`
+	Name string `json:"full_name"`
 	Groups []string `json:"groups"`
 	HomeDir string `json:"home_dir"`
 	Shell string `json:"shell"`

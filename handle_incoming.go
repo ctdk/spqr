@@ -4,6 +4,7 @@ import (
 	"github.com/ctdk/spqr/users"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
+	vault "github.com/hashicorp/vault/api"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -21,7 +22,7 @@ var handleDesc = map[uint8]string{
 	consulEvent: "event",
 }
 
-func handleIncoming(c *consul.Client, keys []interface{}) {
+func handleIncoming(c *consul.Client, v *vault.Client, keys []interface{}) {
 	var handlingType uint8
 	var groupLists [][]*groups.Member
 

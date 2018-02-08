@@ -10,6 +10,8 @@ import (
 
 const Version = "0.0.1"
 
+var GitHash = "unknown"
+
 type Conf struct {
 	ConsulHttpAddr string
 }
@@ -24,7 +26,7 @@ func initConfig() *Conf { return &Conf{} }
 var Config = initConfig()
 
 func ParseConfigOptions() error {
-	var opts &Options{}
+	var opts = &Options{}
 	parser := flags.NewParser(opts, flags.Default)
 	parser.ShortDescription = fmt.Sprintf("A consul leveraging user account manager - version %s", Version)
 

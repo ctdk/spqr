@@ -6,6 +6,7 @@ package users
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -60,7 +61,7 @@ func (u *User) fillInUser() error {
 		defer aKeys.Close()
 		authKeys := bufio.NewScanner(aKeys)
 		for authKeys.Scan() {
-			u.SSHKeys = append(u.SSHKeys, authKeys.Text())
+			u.AuthorizedKeys = append(u.AuthorizedKeys, authKeys.Text())
 		}
 		if err = authKeys.Err(); err != nil {
 			return err
@@ -82,7 +83,7 @@ func (u *User) update() error {
 }
 
 func (u *User) writeOutKeys() error {
-	if len(u.SSHKeys) == 0 {
+	if len(u.AuthorizedKeys) == 0 {
 		err := fmt.Errorf("no SSH keys given for %s", u.Username)
 		return err
 	}
@@ -120,7 +121,7 @@ func (u *User) writeOutKeys() error {
 		return err
 	}
 
-	for _, l := range u.SSHKeys {
+	for _, l := range u.AuthorizedKeys {
 		_, err = tmpAuthKeys.WriteString(l)
 		if err != nil {
 			tmpAuthKeys.Close()
@@ -182,7 +183,7 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	if err != nil {
 		return nil, err
 	}
-	u.SSHKeys = keys
+	u.AuthorizedKeys = keys
 
 	err = u.writeOutKeys()
 	if err != nil {
@@ -241,7 +242,7 @@ func userExists(userName string) bool {
 	return false
 }
 // chsh might not be appropriate for dwarwin at least
-func (u *User) setNoLogin() {
+func (u *User) setNoLogin() error {
 	chshPath, err := exec.LookPath("chsh")
 	if err != nil {
 		return err
