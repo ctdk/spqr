@@ -101,7 +101,7 @@ func handleIncoming(c *consul.Client, v *vault.Client, keys []interface{}) {
 			log.Println(err)
 		} else {
 			fmt.Printf("cleaned up user list: %v\n", u2get)
-			uc := users.NewUserConsulClient(c)
+			uc := users.NewUserExtDataClient(c, v)
 			usarz, e := uc.GetUsers(u2get)
 			if e != nil {
 				log.Println(e)

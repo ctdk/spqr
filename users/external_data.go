@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
+	vault "github.com/hashicorp/vault/api"
 	"log"
 	"os/user"
 	"strings"
@@ -15,6 +16,7 @@ var UserNotFound error = errors.New("That user was not found")
 
 // temporary base here
 const userKeyPrefix = "org/default/users"
+const userVaultPrefix = "secret/spqr/users"
 
 type UserInfo struct {
 	Username string `json:"username"`
@@ -24,20 +26,22 @@ type UserInfo struct {
 	Shell string `json:"shell"`
 	Action UserAction `json:"action"`
 	DoesNotExist bool `json:"does_not_exist"`
+	AuthorizedKeys []string
 }
 
-type UserConsulClient struct {
-	*consul.Client
+type UserExtDataClient struct {
+	consul *consul.Client
+	vault *vault.Client
 	userList []*groups.Member
 	info []*UserInfo
 }
 
-func NewUserConsulClient(c *consul.Client) *UserConsulClient {
-	return &UserConsulClient{c, []*groups.Member{}, []*UserInfo{},}
+func NewUserExtDataClient(c *consul.Client, v *vault.Client) *UserExtDataClient {
+	return &UserExtDataClient{c, v, []*groups.Member{}, []*UserInfo{},}
 }
 
 // get user information out of consul, get any that are present on the
-func (client *UserConsulClient) GetUsers(userList []*groups.Member) ([]*User, error) {
+func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, error) {
 	log.Println("in GetUsers")
 	uinfo := make([]*UserInfo, 0, len(userList))
 	client.userList = userList
@@ -99,12 +103,14 @@ func (ui *UserInfo) compareGroups(curGroups []string) bool {
 	return false
 }
 
-func (c *UserConsulClient) UpdateUsers(userGaggle []*User) error {
+func (c *UserExtDataClient) UpdateUsers(userGaggle []*User) error {
 	return nil
 }
 
-func (c *UserConsulClient) fetchInfo() error {
-	kv := c.KV()
+func (c *UserExtDataClient) fetchInfo() error {
+	kv := c.consul.KV()
+	vb := c.vault.Logical()
+
 	for _, member := range c.userList {
 		name := member.Username
 		kval, _, err := kv.Get(strings.Join([]string{userKeyPrefix, name}, "/"), nil)
@@ -125,6 +131,16 @@ func (c *UserConsulClient) fetchInfo() error {
 			uInfo.Action = Disable
 		}
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
+		
+		// Look for authorized ssh public keys in vault
+		if uInfo.Action != Disable && !uInfo.DoesNotExist {
+			secret, err := vb.Read(strings.Join([]string{userVaultPrefix, name}, "/"))
+			if err != nil {
+				log.Printf("got an error: %s", err.Error())
+			}
+			log.Printf("hey, a secret: %+v", secret)
+		}
+
 		fmt.Printf("got a user info: %+v\n", uInfo)
 		c.info = append(c.info, uInfo)
 	}
