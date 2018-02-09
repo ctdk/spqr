@@ -6,7 +6,6 @@ import (
 	"github.com/ctdk/spqr/config"
 	_ "github.com/ctdk/spqr/users"
 	consul "github.com/hashicorp/consul/api"
-	vault "github.com/hashicorp/vault/api"
 	"log"
 	"os"
 )
@@ -15,18 +14,11 @@ import (
 func main() {
 	config.ParseConfigOptions()
 
-	// configure vault
-	vaultClient, err := configureVault()
-	if err != nil {
-		log.Fatal(err)
-	}
 	consulClient, err := configureConsul()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("connected to consul")
-	_ = vaultClient
-
 
 	// JSON incoming!
 	var incoming interface{}
@@ -48,7 +40,7 @@ func main() {
 			break
 		}
 		fmt.Printf("key prefix or event, probably (don't care about the other possibilities)\n")
-		handleIncoming(consulClient, vaultClient, incoming)
+		handleIncoming(consulClient, incoming)
 	default:
 		fmt.Printf("Not anything we're interested in: %T\n", incoming)
 	}
@@ -74,19 +66,6 @@ func main() {
 		log.Fatal(err)
 	}
 	*/
-}
-
-func configureVault() (*vault.Client, error) {
-	conf := vault.DefaultConfig()
-	if err := conf.ReadEnvironment(); err != nil {
-		return nil, err
-	}
-	c, err := vault.NewClient(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
 }
 
 func configureConsul() (*consul.Client, error) {

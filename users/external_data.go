@@ -2,42 +2,25 @@ package users
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
-	vault "github.com/hashicorp/vault/api"
 	"log"
-	"os/user"
+	"sort"
 	"strings"
 )
 
-var UserNotFound error = errors.New("That user was not found")
-
 // temporary base here
 const userKeyPrefix = "org/default/users"
-const userVaultPrefix = "secret/spqr/users"
-
-type UserInfo struct {
-	Username string `json:"username"`
-	Name string `json:"full_name"`
-	Groups []string `json:"groups"`
-	HomeDir string `json:"home_dir"`
-	Shell string `json:"shell"`
-	Action UserAction `json:"action"`
-	DoesNotExist bool `json:"does_not_exist"`
-	AuthorizedKeys []string
-}
 
 type UserExtDataClient struct {
-	consul *consul.Client
-	vault *vault.Client
+	*consul.Client
 	userList []*groups.Member
 	info []*UserInfo
 }
 
-func NewUserExtDataClient(c *consul.Client, v *vault.Client) *UserExtDataClient {
-	return &UserExtDataClient{c, v, []*groups.Member{}, []*UserInfo{},}
+func NewUserExtDataClient(c *consul.Client) *UserExtDataClient {
+	return &UserExtDataClient{c, []*groups.Member{}, []*UserInfo{},}
 }
 
 // get user information out of consul, get any that are present on the
@@ -57,12 +40,7 @@ func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, e
 	for _, uEntry := range client.info {
 		if uEntry.DoesNotExist {
 			// A user needs to be created.
-			n := new(user.User)
-			newUser := &User{n, nil, uEntry.Shell, uEntry.Action, uEntry.Groups, true, true}
-			newUser.Username = uEntry.Username
-			newUser.Name = uEntry.Name
-			newUser.HomeDir = uEntry.HomeDir
-			newUser, err := New(uEntry.Username, uEntry.Name, uEntry.HomeDir, uEntry.Shell, uEntry.Action, uEntry.Groups)
+			newUser, err := New(uEntry.Username, uEntry.Name, uEntry.HomeDir, uEntry.Shell, uEntry.Action, uEntry.Groups, uEntry.AuthorizedKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -70,6 +48,10 @@ func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, e
 		} else {
 			// user already exists
 			uObj, err := Get(uEntry.Username)
+			if err != nil {
+				return nil, err
+			}
+			err = uObj.updateInfo(uEntry)
 			if err != nil {
 				return nil, err
 			}
@@ -108,8 +90,7 @@ func (c *UserExtDataClient) UpdateUsers(userGaggle []*User) error {
 }
 
 func (c *UserExtDataClient) fetchInfo() error {
-	kv := c.consul.KV()
-	vb := c.vault.Logical()
+	kv := c.KV()
 
 	for _, member := range c.userList {
 		name := member.Username
@@ -117,6 +98,7 @@ func (c *UserExtDataClient) fetchInfo() error {
 		if err != nil {
 			return err
 		}
+		log.Printf("key we think we have?: %s", strings.Join([]string{userKeyPrefix, name}, "/"))
 		uInfo := new(UserInfo)
 		err = json.Unmarshal(kval.Value, &uInfo)
 		if err != nil {
@@ -130,42 +112,12 @@ func (c *UserExtDataClient) fetchInfo() error {
 		if member.Status == groups.Disabled {
 			uInfo.Action = Disable
 		}
+		sort.Strings(uInfo.AuthorizedKeys)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
 		
-		// Look for authorized ssh public keys in vault
-		if uInfo.Action != Disable && !uInfo.DoesNotExist {
-			secret, err := vb.Read(strings.Join([]string{userVaultPrefix, name}, "/"))
-			if err != nil {
-				log.Printf("got an error: %s", err.Error())
-			}
-			log.Printf("hey, a secret: %+v", secret)
-		}
-
 		fmt.Printf("got a user info: %+v\n", uInfo)
 		c.info = append(c.info, uInfo)
 	}
 
 	return nil
 }
-
-/*
-	s, err := c.Logical().Read(strings.Join([]string{userVaultPrefix, "foo"}, "/"))
-	if err != nil {
-		fmt.Printf("err: %s\n", err.Error())
-	}
-	fmt.Printf("secret? %+v\n", s)
-	data := s.Data
-	fmt.Printf("hm: %T %v\n", data["ssh_keys"], data["ssh_keys"])
-	j := make(map[string]interface{})
-	e := json.Unmarshal([]byte(data["ssh_keys"].(string)), &j)
-	if e != nil {
-		fmt.Printf("e: %s\n", e.Error())
-	}
-	fmt.Printf("j: %T %+v\n", j, j)
-
-###
-secret? &{RequestID:9003c419-c5e1-4192-ad93-4e932c425c65 LeaseID: LeaseDuration:2764800 Renewable:false Data:map[ssh_keys:{"authorized_keys": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local"]}] Warnings:[] Auth:<nil> WrapInfo:<nil>}
-hm: string {"authorized_keys": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local"]}
-j: map[string]interface {} map[authorized_keys:[ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy/IqagcHKHWwk6iJNM/iVLAs+FWGYcx3KtJ1xyz8GgbvNf0NXXraDaAJewzxQAg+8V2E0/+6ynzzoyxSakaEeEKKI6PolHuGpKM44bG//8XZTesOiWE7W8KrpwhRSVkDy8zFsrmtIjinKjr0rYHX2Bw5FoXKjYWvbzXCsJhLOpbGOWkDNbLY5gL2nLvx5h5MO14ZKqHEm0eiQnB/b697Vqc4WvLZBCOra+0NKWcrJMHQGi5pijb9l1PlunmUche0Eo2l3J4F+TRzTMEfMZIsHM7Oa8LhHu+rwq6bdplTTykXUEUqHcBlE9IkY4uWZv7VRkaguuwwdlOlYW0/YM3ipQ== jeremy@nineveh.local]]
-###
-*/

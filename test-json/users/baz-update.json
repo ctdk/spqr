@@ -3,7 +3,9 @@
   "full_name": "Baz McBazzick",
   "groups": ["sudo", "bazzer"],
   "action": "create",
+  "shell": "/bin/sh",
   "authorized_keys": [
-    "ssh-rsa AAAAAAAAAAA baz@q.local"
+    "ssh-rsa AAAAAAAAAAA baz@q.local",
+    "ssh-rsa AAAAAA124 baz@hi.local"
   ]
 }

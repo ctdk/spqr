@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"github.com/ctdk/spqr/util"
 	"fmt"
 	"math/big"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sort"
 	"log"
 )
 
@@ -33,49 +35,55 @@ func init() {
 
 // get the user's shell and ssh keys
 func (u *User) fillInUser() error {
-	passwd, err := os.Open("/etc/passwd")
+	shell, err := getShell(u.Username)
 	if err != nil {
 		return err
 	}
-	defer passwd.Close()
-	pl := bufio.NewScanner(passwd)
-	for pl.Scan() {
-		line := pl.Text()
-		if strings.HasPrefix(line, u.Username) {
-			fields := strings.Split(line, ":")
-			u.Shell = fields[len(fields)-1]
-			break
-		}
-	}
-	if err = pl.Err(); err != nil {
+	u.Shell = shell
+
+	authorizedKeyFile := u.authorizedKeyPath()
+
+	authorizedKeys, err := getAuthorizedKeys(authorizedKeyFile)
+	if err != nil {
 		return err
 	}
-	
-	authorizedKeyFile := u.authorizedKeyPath()
+
+	u.AuthorizedKeys = authorizedKeys
+
+	return nil
+}
+
+func getAuthorizedKeys(authorizedKeyFile string) ([]string, error) {
+	var authorizedKeys []string
 
 	if aKeys, err := os.Open(authorizedKeyFile); err != nil {
 		if !os.IsNotExist(err) {
-			return err
+			return nil, err
 		}
 	} else {
 		defer aKeys.Close()
 		authKeys := bufio.NewScanner(aKeys)
 		for authKeys.Scan() {
-			u.AuthorizedKeys = append(u.AuthorizedKeys, authKeys.Text())
+			authorizedKeys = append(authorizedKeys, authKeys.Text())
 		}
 		if err = authKeys.Err(); err != nil {
-			return err
+			return nil, err
 		}
 	}
+	
+	sort.Strings(authorizedKeys)
 
-	return nil
+	return authorizedKeys, nil
 }
 
 func (u *User) update() error {
 	// TODO: update other fields besides just SSH keys, like shell, various
 	// /etc/passwd entries, etc.
-	err := u.writeOutKeys()
-	if err != nil {
+	if err := u.writeOutKeys(); err != nil {
+		return err
+	}
+
+	if err := u.changeShell(u.Shell); err != nil {
 		return err
 	}
 
@@ -120,6 +128,7 @@ func (u *User) writeOutKeys() error {
 	if err != nil {
 		return err
 	}
+	log.Printf("authorized keys? %s", u.AuthorizedKeys)
 
 	for _, l := range u.AuthorizedKeys {
 		_, err = tmpAuthKeys.WriteString(l)
@@ -156,7 +165,7 @@ func (u *User) authorizedKeyPath() string {
 	return path.Join(u.HomeDir, ".ssh", "authorized_keys")
 }
 
-func osNew(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
+func osNew(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string, authorizedKeys []string) (*User, error) {
 	if homeDir == "" {
 		homeDir = path.Join(DefaultHomeBase, userName)
 	}
@@ -176,6 +185,7 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	newUser.Username = userName
 	newUser.Name = fullName
 	newUser.HomeDir = homeDir
+	newUser.AuthorizedKeys = authorizedKeys
 
 	/***** Move this elsewhere
 	err := newUser.osCreateUser()
@@ -243,6 +253,10 @@ func userExists(userName string) bool {
 }
 // chsh might not be appropriate for dwarwin at least
 func (u *User) setNoLogin() error {
+	return u.changeShell("/sbin/nologin")
+}
+
+func (u *User) changeShell(shell string) error {
 	chshPath, err := exec.LookPath("chsh")
 	if err != nil {
 		return err
@@ -254,13 +268,32 @@ func (u *User) setNoLogin() error {
 	// make sure RHEL/CentOS or some other sort of unix doesn't use
 	// something else besides /sbin/nologin for setting an account to
 	// be unable to login.
-	chsh := exec.Command(chshPath, "-s", "/sbin/nologin", u.Username)
+	chsh := exec.Command(chshPath, "-s", shell, u.Username)
 	chsh.Stdout = &stdout
 	chsh.Stderr = &stderr
 	err = chsh.Run()
 	if err != nil {
-		return fmt.Errorf("Error received trying to user %s to nologin: %s %s", u.Username, err.Error(), stderr.String())
+		return fmt.Errorf("Error received trying to user %s to %s: %s %s", u.Username, shell, err.Error(), stderr.String())
 	}
 
+	return nil
+}
+
+func (u *User) updateInfo(uEntry *UserInfo) error {
+	// Low hanging fruit first - check if the shell and ssh keys need to be
+	// changed.
+	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
+		u.Shell = uEntry.Shell
+		u.changed = true
+	}
+
+	oldKeys, err := getAuthorizedKeys(u.authorizedKeyPath())
+	if err != nil {
+		return err
+	}
+	if !util.SliceEqual(oldKeys, uEntry.AuthorizedKeys) {
+		u.AuthorizedKeys = uEntry.AuthorizedKeys
+		u.changed = true
+	}
 	return nil
 }

@@ -11,3 +11,7 @@ import (
 func (u *User) osCreateUser() error {
 	return errors.New("user creation not supported on darwin")
 }
+
+func getShell(username string) (string, error) {
+	return "", errors.New("getting a user's shell is not supported on darwin")
+}

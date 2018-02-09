@@ -3,5 +3,9 @@
   "full_name": "Quux Quuxcowicz",
   "groups": [],
   "shell": "/bin/bash",
-  "action": "disable"
+  "action": "disable",
+  "authorized_keys": [
+    "ssh-rsa AAAAAAAAAAA quux@q.local",
+    "ssh-rsa AAA23dfasdfasdf quuxrooty@q.moo"
+  ]
 }

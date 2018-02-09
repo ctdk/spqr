@@ -4,7 +4,6 @@ import (
 	"github.com/ctdk/spqr/users"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
-	vault "github.com/hashicorp/vault/api"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -22,7 +21,7 @@ var handleDesc = map[uint8]string{
 	consulEvent: "event",
 }
 
-func handleIncoming(c *consul.Client, v *vault.Client, keys []interface{}) {
+func handleIncoming(c *consul.Client, keys []interface{}) {
 	var handlingType uint8
 	var groupLists [][]*groups.Member
 
@@ -101,7 +100,7 @@ func handleIncoming(c *consul.Client, v *vault.Client, keys []interface{}) {
 			log.Println(err)
 		} else {
 			fmt.Printf("cleaned up user list: %v\n", u2get)
-			uc := users.NewUserExtDataClient(c, v)
+			uc := users.NewUserExtDataClient(c)
 			usarz, e := uc.GetUsers(u2get)
 			if e != nil {
 				log.Println(e)

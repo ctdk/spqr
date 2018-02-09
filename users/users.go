@@ -3,10 +3,13 @@
 package users
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os/user"
 )
+
+var UserNotFound error = errors.New("That user was not found")
 
 type UserAction string
 
@@ -26,10 +29,21 @@ type User struct {
 	notExist bool
 }
 
+type UserInfo struct {
+	Username string `json:"username"`
+	Name string `json:"full_name"`
+	Groups []string `json:"groups"`
+	HomeDir string `json:"home_dir"`
+	Shell string `json:"shell"`
+	Action UserAction `json:"action"`
+	DoesNotExist bool `json:"does_not_exist"`
+	AuthorizedKeys []string `json:"authorized_keys"`
+}
+
 // New creates a new user. It's a pass-through to an OS-specific function, see
 // the appropriate one for details.
-func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string) (*User, error) {
-	return osNew(userName, fullName, homeDir, shell, action, groups)
+func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string, authorizedKeys []string) (*User, error) {
+	return osNew(userName, fullName, homeDir, shell, action, groups, authorizedKeys)
 }
 
 // Get a user, if it exists.
@@ -50,6 +64,10 @@ func Get(username string) (*User, error) {
 }
 
 func (u *User) Update() error {
+	if !u.changed {
+		return nil
+	}
+
 	return u.update()
 }
 
@@ -76,6 +94,7 @@ func ProcessUsers(userList []*User) error {
 	existingGroups := make(map[string]bool)
 
 	for _, u := range userList {
+		log.Printf("user stuff: %+v", u)
 		// Check for OS groups and create them if needed
 		for _, g := range u.Groups {
 			if !existingGroups[g] {

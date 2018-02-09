@@ -5,8 +5,10 @@
 package users
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -51,7 +53,15 @@ func (u *User) osCreateUser() error {
 	if err != nil {
 		return err
 	}
+
+	// save the keys
+	authkeys := u.AuthorizedKeys
 	u = nu
+	u.AuthorizedKeys = authkeys
+	err = u.writeOutKeys()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -72,4 +82,26 @@ func osMakeNewGroup(groupName string) error {
 		return fmt.Errorf("Error received trying to create group %s: %s %s", groupName, err.Error(), stderr.String())
 	}
 	return nil
+}
+
+func getShell(username string) (string, error) {
+	var shell string
+	passwd, err := os.Open("/etc/passwd")
+	if err != nil {
+		return "", err
+	}
+	defer passwd.Close()
+	pl := bufio.NewScanner(passwd)
+	for pl.Scan() {
+		line := pl.Text()
+		if strings.HasPrefix(line, fmt.Sprintf("%s:", username)) {
+			fields := strings.Split(line, ":")
+			shell = fields[len(fields)-1]
+			break
+		}
+	}
+	if err = pl.Err(); err != nil {
+		return "", err
+	}
+	return shell, nil
 }
