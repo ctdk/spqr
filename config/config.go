@@ -21,12 +21,18 @@ type Conf struct {
 	ConsulHttpAddr string
 	UserKeyPrefix string
 	DebugLevel int
+	LogFile string
+	SysLog bool
+	StateFile string
 }
 
 type Options struct {
 	Version bool `short:"v" long:"version" description:"Print version info."`
 	ConsulHttpAddr string `short:"C" long:"consul-http-addr" description:"Consul HTTP API endpoint. Defaults to http://127.0.0.1:8500. Shares the same CONSUL_HTTP_ADDR environment variable as consul itself as well." env:"CONSUL_HTTP_ADDR"`
 	UserKeyPrefix string `short:"P" long:"user-key-prefix" description:"Consul key prefix for user data. Default value: 'org/default/users'." env:"SPQR_USER_KEY_PREFIX"`
+	LogFile string `short:"L" long:"log-file" description:"Log to file X" env:"SPQR_LOG_FILE"`
+	SysLog bool `short:"S" long:"syslog" description:"Log to syslog rather than to a log file. Incompatible with -L/--log-file." env:"SPQR_SYSLOG"`
+	StateFile string `short:"s" long:"statefile" description:"Store spqr's state in this file."`
 	Verbose              []bool       `short:"V" long:"verbose" description:"Show verbose debug information. Repeat for more verbosity."`
 }
 
@@ -68,6 +74,18 @@ func ParseConfigOptions() error {
 		Config.UserKeyPrefix = defaultUserKeyPrefix
 	}
 
+	if opts.SysLog {
+		Config.SysLog = opts.SysLog
+	}
+	if Config.LogFile != "" {
+		lfp, lerr := os.OpenFile(Config.LogFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend|0666)
+		if lerr != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+		log.SetOutput(lfp)
+	}
+
 	if dl := len(opts.Verbose); dl != 0 {
 		Config.DebugLevel = dl
 	}
@@ -77,6 +95,15 @@ func ParseConfigOptions() error {
 	Config.DebugLevel = int(logger.LevelFatal) - Config.DebugLevel
 	logger.SetLevel(logger.LogLevel(Config.DebugLevel))
 	log.Printf("Logging at %s level", debugLevelDesc[Config.DebugLevel])
+	lerr := setLogger(Config.SysLog)
+	if lerr != nil {
+		log.Println(lerr.Error())
+		os.Exit(1)
+	}
+
+	if opts.StateFile != "" {
+		Config.StateFile = opts.StateFile
+	}
 
 	return nil
 }
