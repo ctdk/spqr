@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"github.com/ctdk/spqr/util"
+	"github.com/tideland/golib/logger"
 	"fmt"
 	"math/big"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"sort"
-	"log"
 )
 
 const sshDirPerm = 0700
@@ -91,6 +91,7 @@ func (u *User) update() error {
 }
 
 func (u *User) writeOutKeys() error {
+	logger.Debugf("writing out authorized keys for %s", u.Username)
 	if len(u.AuthorizedKeys) == 0 {
 		err := fmt.Errorf("no SSH keys given for %s", u.Username)
 		return err
@@ -99,9 +100,7 @@ func (u *User) writeOutKeys() error {
 	authorizedKeyFile := u.authorizedKeyPath()
 	authorizedKeyDir := path.Dir(authorizedKeyFile)
 
-	log.Printf("auth key dir: %s", authorizedKeyDir)
 	if _, err := os.Stat(authorizedKeyDir); err != nil {
-		log.Println("stat failed, as expected")
 		if !os.IsNotExist(err) {
 			return err
 		}
@@ -128,7 +127,6 @@ func (u *User) writeOutKeys() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("authorized keys? %s", u.AuthorizedKeys)
 
 	for _, l := range u.AuthorizedKeys {
 		_, err = tmpAuthKeys.WriteString(l)
@@ -149,6 +147,7 @@ func (u *User) writeOutKeys() error {
 	if err != nil {
 		return err
 	}
+	logger.Debugf("successfully wrote authorized keys for %s", u.Username)
 	return nil
 }
 
@@ -158,6 +157,7 @@ func (u *User) deleteAuthKeys() error {
 	if err != nil {
 		return err
 	}
+	logger.Debugf("deleted authorized keys for %s", u.Username)
 	return nil
 }
 
@@ -186,20 +186,6 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	newUser.Name = fullName
 	newUser.HomeDir = homeDir
 	newUser.AuthorizedKeys = authorizedKeys
-
-	/***** Move this elsewhere
-	err := newUser.osCreateUser()
-	log.Printf("user '%s' home: '%s' is? %+v", u.Username, u.HomeDir, u)
-	if err != nil {
-		return nil, err
-	}
-	u.AuthorizedKeys = keys
-
-	err = u.writeOutKeys()
-	if err != nil {
-		return nil, err
-	}
-	******/
 
 	return newUser, nil
 }
@@ -280,6 +266,9 @@ func (u *User) changeShell(shell string) error {
 }
 
 func (u *User) updateInfo(uEntry *UserInfo) error {
+	// Set the action, eh
+	u.Action = uEntry.Action
+
 	// Low hanging fruit first - check if the shell and ssh keys need to be
 	// changed.
 	if uEntry.Shell != "" && u.Shell != uEntry.Shell {

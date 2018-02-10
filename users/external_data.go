@@ -2,30 +2,27 @@ package users
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
-	"log"
+	"github.com/tideland/golib/logger"
 	"sort"
 	"strings"
 )
-
-// temporary base here
-const userKeyPrefix = "org/default/users"
 
 type UserExtDataClient struct {
 	*consul.Client
 	userList []*groups.Member
 	info []*UserInfo
+	userKeyPrefix string
 }
 
-func NewUserExtDataClient(c *consul.Client) *UserExtDataClient {
-	return &UserExtDataClient{c, []*groups.Member{}, []*UserInfo{},}
+func NewUserExtDataClient(c *consul.Client, userKeyPrefix string) *UserExtDataClient {
+	return &UserExtDataClient{c, []*groups.Member{}, []*UserInfo{}, userKeyPrefix,}
 }
 
 // get user information out of consul, get any that are present on the
 func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, error) {
-	log.Println("in GetUsers")
+	logger.Debugf("In GetUsers")
 	uinfo := make([]*UserInfo, 0, len(userList))
 	client.userList = userList
 	client.info = uinfo
@@ -33,11 +30,9 @@ func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, e
 	if err != nil {
 		return nil, err
 	}
-	for _, u := range client.info {
-		fmt.Printf("a user info: %+v\n", u)
-	}
 	usarz := make([]*User, 0, len(client.info))
 	for _, uEntry := range client.info {
+		logger.Debugf("Getting entry for %s. Does not exist? %v", uEntry.Username, uEntry.DoesNotExist)
 		if uEntry.DoesNotExist {
 			// A user needs to be created.
 			newUser, err := New(uEntry.Username, uEntry.Name, uEntry.HomeDir, uEntry.Shell, uEntry.Action, uEntry.Groups, uEntry.AuthorizedKeys)
@@ -94,28 +89,25 @@ func (c *UserExtDataClient) fetchInfo() error {
 
 	for _, member := range c.userList {
 		name := member.Username
-		kval, _, err := kv.Get(strings.Join([]string{userKeyPrefix, name}, "/"), nil)
+		kval, _, err := kv.Get(strings.Join([]string{c.userKeyPrefix, name}, "/"), nil)
 		if err != nil {
 			return err
 		}
-		log.Printf("key we think we have?: %s", strings.Join([]string{userKeyPrefix, name}, "/"))
 		uInfo := new(UserInfo)
 		err = json.Unmarshal(kval.Value, &uInfo)
 		if err != nil {
-			log.Printf("raw data was: '%s'", string(kval.Value))
 			return err
 		}
 		if uInfo.Username == "" {
 			uInfo.Username = uInfo.Name
 		}
-		log.Printf("uInfo status: %s group member status: %s", uInfo.Action, member.Status)
 		if member.Status == groups.Disabled {
 			uInfo.Action = Disable
 		}
 		sort.Strings(uInfo.AuthorizedKeys)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
 		
-		fmt.Printf("got a user info: %+v\n", uInfo)
+		logger.Debugf("got a user info: %+v\n", uInfo)
 		c.info = append(c.info, uInfo)
 	}
 

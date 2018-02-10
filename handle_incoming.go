@@ -1,13 +1,14 @@
 package main
 
 import (
+	"github.com/ctdk/spqr/config"
 	"github.com/ctdk/spqr/users"
 	"github.com/ctdk/spqr/groups"
 	consul "github.com/hashicorp/consul/api"
+	"github.com/tideland/golib/logger"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 const (
@@ -41,7 +42,7 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 					payload = r
 					handlingType = consulEvent
 				} else {
-					log.Println("doesn't appear to be a keyprefix or event, moving on")
+					logger.Warningf("doesn't appear to be a keyprefix or event, moving on")
 					continue
 				}
 			} else {
@@ -52,23 +53,22 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 				case consulEvent:
 					payload, ok = k["Payload"].(string)
 				default:
-					panic("there's no way this should be reachable")
+					logger.Fatalf("there's no way this should be reachable")
 				}
 				if !ok {
-					log.Printf("expected a string, but something went wrong")
+					logger.Errorf("expected a string, but something went wrong")
 				}
 			}
 
 			val, err := base64.StdEncoding.DecodeString(payload)
 			if err != nil {
-				log.Println(err)
+				logger.Errorf(err.Error())
 			}
 
-			fmt.Printf("and val: '%s'\n", val)
 			j := make(map[string]interface{})
 			err = json.Unmarshal([]byte(val), &j)
 			if err != nil {
-				log.Println(err)
+				logger.Errorf(err.Error())
 				continue
 			}
 			fmt.Printf("this is a %s\n", handleDesc[handlingType])
@@ -77,15 +77,14 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 			}
 			switch handlingType {
 			case keyPrefix:
-				log.Printf("j[\"users\"]: %+v", j["users"])
 				convUsers, err := convertUsersInterfaceSlice(j["users"].([]interface{}))
 				if err != nil {
-					log.Println(err)
+					logger.Errorf(err.Error())
 					continue
 				}
 				groupLists = append(groupLists, convUsers)
 			default:
-				log.Printf("not handling %s yet in switch", handleDesc[handlingType])
+				logger.Debugf("not handling %s yet in switch", handleDesc[handlingType])
 			}
 		default:
 			fmt.Printf("NOT what I expected: %T %v", k, k)
@@ -97,24 +96,38 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 	case keyPrefix:
 		fmt.Printf("groups: %v\n", groupLists)
 		if u2get, err := groups.RemoveDupeUsers(groupLists); err != nil {
-			log.Println(err)
+			logger.Errorf(err.Error())
 		} else {
-			fmt.Printf("cleaned up user list: %v\n", u2get)
-			uc := users.NewUserExtDataClient(c)
+			logger.Debugf("cleaned up user list: %v\n", u2get)
+			uc := users.NewUserExtDataClient(c, config.Config.UserKeyPrefix)
 			usarz, e := uc.GetUsers(u2get)
 			if e != nil {
-				log.Println(e)
+				logger.Errorf(e.Error())
 			}
-			log.Printf("usarz? %+v", usarz)
 			perr := users.ProcessUsers(usarz)
 			if perr != nil {
-				log.Println(perr)
+				logger.Errorf(perr.Error())
 			}
 		}
 	default:
-		fmt.Printf("not there yet")
+		logger.Infof("not handling events (or anything else besides key prefix watches) yet")
 	}
 
 }
 
-
+func convertUsersInterfaceSlice(u []interface{}) ([]*groups.Member, error) {
+	l := len(u)
+	users := make([]*groups.Member, l)
+	for i, v := range u {
+		s, ok := v.(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("%v was supposed to be a map[string]interface{}, but was actually %T", v, v)
+			return nil, err
+		}
+		m := new(groups.Member)
+		m.Username = s["username"].(string)
+		m.Status = s["status"].(string)
+		users[i] = m
+	}
+	return users, nil
+}

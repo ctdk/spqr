@@ -3,9 +3,8 @@
 package groups
 
 import (
-	//"github.com/ctdk/spqr/users"
+	"github.com/tideland/golib/logger"
 	"fmt"
-	"log"
 	"errors"
 	"sort"
 )
@@ -53,11 +52,11 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 	for w, q := range list {
 		listSort = fmt.Sprintf("%s %d %+v", listSort, w, q)
 	}
-	log.Printf("sorted list: %v", listSort)
+	logger.Debugf("sorted list: %v", listSort)
 
 	// borrowing from goiardi some here
 	for i, u := range list {
-		log.Printf("user in RemoveDupeUsers: %+v", u)
+		logger.Debugf("user in RemoveDupeUsers: %+v", u)
 		if i > len(list) {
 			break
 		}
@@ -92,7 +91,7 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 	for w, q := range list {
 		listSort = fmt.Sprintf("%s %d %+v", listSort, w, q)
 	}
-	log.Printf("the sorted and de-duped list: %v", listSort)
+	logger.Debugf("the sorted and de-duped list: %v", listSort)
 	return list, nil
 }
 

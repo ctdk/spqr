@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ctdk/spqr/config"
-	_ "github.com/ctdk/spqr/users"
 	consul "github.com/hashicorp/consul/api"
-	"log"
+	"github.com/tideland/golib/logger"
 	"os"
 )
 
@@ -16,9 +15,9 @@ func main() {
 
 	consulClient, err := configureConsul()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalf(err.Error())
 	}
-	log.Println("connected to consul")
+	logger.Debugf("connected to consul")
 
 	// JSON incoming!
 	var incoming interface{}
@@ -26,46 +25,24 @@ func main() {
 	dec.UseNumber()
 
 	if err := dec.Decode(&incoming); err != nil {
-		log.Println(err)
+		logger.Errorf(err.Error())
 	}
 
-	fmt.Printf("incoming: %T %v\n", incoming, incoming)
+	logger.Debugf("incoming: %T %v\n", incoming, incoming)
 
 	switch incoming := incoming.(type) {
 	case nil:
 		fmt.Printf("won't do anything\n")
 	case []interface{}:
 		if len(incoming) == 0 {
-			log.Println("empty item, skipping")
+			logger.Debugf("empty item, skipping")
 			break
 		}
 		fmt.Printf("key prefix or event, probably (don't care about the other possibilities)\n")
 		handleIncoming(consulClient, incoming)
 	default:
-		fmt.Printf("Not anything we're interested in: %T\n", incoming)
+		logger.Debugf("Not anything we're interested in: %T\n", incoming)
 	}
-	
-
-	// moo.
-	/*
-	_, err = users.New("foomer", "Foo Mer", "", "", []string{}, []string{"badkey"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	u, err := users.Get("foomer")
-	if err != nil {
-		log.Fatal(err)
-	}
-	u.SSHKeys = []string{"aBadKey","soBad","aVeryBadKeyIndeed","wayBad"}
-	err = u.Update()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = u.Disable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	*/
 }
 
 func configureConsul() (*consul.Client, error) {

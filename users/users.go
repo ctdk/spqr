@@ -5,8 +5,9 @@ package users
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/tideland/golib/logger"
 	"os/user"
+	"sort"
 )
 
 var UserNotFound error = errors.New("That user was not found")
@@ -49,13 +50,18 @@ func New(userName string, fullName string, homeDir string, shell string, action 
 // Get a user, if it exists.
 func Get(username string) (*User, error) {
 	osUser, err := user.Lookup(username)
-	log.Printf("osUser? %+v", osUser)
 	if err != nil {
 		return nil, err
 	}
 	u := &User{osUser, nil, "", NullAction, nil, false, false}
 	err = u.fillInUser()
-	u.Groups, _ = u.GroupIds()
+	gids, _ := u.GroupIds()
+
+	for _, g := range gids {
+		gr, _ := user.LookupGroupId(g)
+		u.Groups = append(u.Groups, gr.Name)
+	}
+	sort.Strings(u.Groups)
 
 	if err != nil {
 		return nil, err
@@ -86,6 +92,7 @@ func (u *User) Disable() error {
 }
 
 func MakeNewGroup(groupName string) error {
+	logger.Debugf("Making new group %s", groupName)
 	return osMakeNewGroup(groupName)
 }
 
@@ -94,10 +101,10 @@ func ProcessUsers(userList []*User) error {
 	existingGroups := make(map[string]bool)
 
 	for _, u := range userList {
-		log.Printf("user stuff: %+v", u)
 		// Check for OS groups and create them if needed
 		for _, g := range u.Groups {
 			if !existingGroups[g] {
+				logger.Debugf("looking up group %s", g)
 				gPresent, _ := user.LookupGroup(g)
 				if gPresent == nil {
 					err := MakeNewGroup(g)

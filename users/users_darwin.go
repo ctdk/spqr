@@ -15,3 +15,7 @@ func (u *User) osCreateUser() error {
 func getShell(username string) (string, error) {
 	return "", errors.New("getting a user's shell is not supported on darwin")
 }
+
+func osMakeNewGroup(groupName string) error {
+	return errors.New("creating new groups is not supported on darwin")
+}
