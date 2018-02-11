@@ -4,6 +4,7 @@ import (
 	"github.com/ctdk/spqr/config"
 	"github.com/ctdk/spqr/users"
 	"github.com/ctdk/spqr/groups"
+	"github.com/ctdk/spqr/state"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/tideland/golib/logger"
 	"encoding/base64"
@@ -22,15 +23,27 @@ var handleDesc = map[uint8]string{
 	consulEvent: "event",
 }
 
-func handleIncoming(c *consul.Client, keys []interface{}) {
+func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan *state.Indices, doProcess <-chan bool, keys []interface{}) {
 	var handlingType uint8
 	var groupLists [][]*groups.Member
 
 	for _, k := range keys {
 		switch k := k.(type) {
 		case map[string]interface{}:
-			fmt.Printf("what I expected: %+v\n", k)
+			logger.Debugf("what I expected: %+v\n", k)
 			var payload string
+
+			if stateHolder != nil {
+				idx := new(state.Indices)
+				idx.CreateIndex = k["CreateIndex"].(int)
+				idx.ModifyIndex = k["ModifyIndex"].(int)
+				idx.LockIndex = k["LockIndex"].(int)
+				incomingCh <- idx
+				proceed := <-doProcess
+				if !proceed {
+					continue
+				}
+			}
 			
 			// within one request, everything will be just one kind
 			// of thing so this only needs to be checked once.
@@ -71,10 +84,7 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 				logger.Errorf(err.Error())
 				continue
 			}
-			fmt.Printf("this is a %s\n", handleDesc[handlingType])
-			for u, y := range j {
-				fmt.Printf("u: %s y: %T %v\n", u, y, y)
-			}
+			logger.Debugf("this is a %s\n", handleDesc[handlingType])
 			switch handlingType {
 			case keyPrefix:
 				convUsers, err := convertUsersInterfaceSlice(j["users"].([]interface{}))
@@ -87,14 +97,13 @@ func handleIncoming(c *consul.Client, keys []interface{}) {
 				logger.Debugf("not handling %s yet in switch", handleDesc[handlingType])
 			}
 		default:
-			fmt.Printf("NOT what I expected: %T %v", k, k)
+			logger.Errorf("NOT what I expected: %T %v", k, k)
 		}
 	}
 
 	// So what do we do?
 	switch handlingType {
 	case keyPrefix:
-		fmt.Printf("groups: %v\n", groupLists)
 		if u2get, err := groups.RemoveDupeUsers(groupLists); err != nil {
 			logger.Errorf(err.Error())
 		} else {
