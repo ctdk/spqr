@@ -26,7 +26,7 @@ func main() {
 
 	if config.Config.StateFile != "" {
 		logger.Debugf("setting up the state file")
-		go state.InitState(stateHolder, config.Config.StateFile, inCh, errCh, doneCh)
+		go state.InitState(&stateHolder, config.Config.StateFile, inCh, errCh, doneCh)
 		err = <- errCh
 		if err != nil {
 			logger.Fatalf(err.Error())
@@ -48,7 +48,7 @@ func main() {
 
 	switch incoming := incoming.(type) {
 	case nil:
-		logger.Debugf("nil event, won't do anything\n")
+		logger.Debugf("nil event, won't do anything")
 	case []interface{}:
 		if len(incoming) == 0 {
 			logger.Debugf("empty item, skipping")

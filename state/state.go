@@ -9,19 +9,19 @@ import (
 )
 
 type State struct {
-	createIndex int
-	modifyIndex int
-	lockIndex int
+	createIndex int64
+	modifyIndex int64
+	lockIndex int64
 	lastIncoming time.Time
 }
 
 type Indices struct {
-	CreateIndex int
-	ModifyIndex int
-	LockIndex int
+	CreateIndex int64
+	ModifyIndex int64
+	LockIndex int64
 }
 
-func InitState(stateHolder *State, statePath string, incomingCh <-chan *Indices, errch chan<- error, doneCh chan<- struct{}) {
+func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices, errch chan<- error, doneCh chan<- struct{}) {
 	fp, err := os.OpenFile(statePath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		errch <- err
@@ -29,7 +29,8 @@ func InitState(stateHolder *State, statePath string, incomingCh <-chan *Indices,
 	}
 	defer fp.Close()
 	
-	fp.Truncate(int64(unsafe.Sizeof(stateHolder)))
+	logger.Debugf("Allocating %d bytes for state.", unsafe.Sizeof(**stateHolder))
+	fp.Truncate(int64(unsafe.Sizeof(**stateHolder)))
 	mapped, err := mmap.Map(fp, mmap.RDWR, 0)
 
 	if err != nil {
@@ -38,29 +39,38 @@ func InitState(stateHolder *State, statePath string, incomingCh <-chan *Indices,
 	}
 	defer mapped.Unmap()
 
+	logger.Debugf("Mapped state file, initializing state: %v", mapped)
+	*stateHolder = (*State)(unsafe.Pointer(&mapped[0]))
+
+	// wait to send error back until state map is mapped
 	errch <- nil
 	close(errch)
 
-	stateHolder = (*State)(unsafe.Pointer(&mapped[0]))
+	flushCh := make(chan struct{})
+	go func(){
+		<- flushCh
+		mapped.Flush()
+	}()
 
 	for idx := range incomingCh {
-		stateHolder.processIncomingData(idx)
+		(*stateHolder).processIncomingData(idx, flushCh)
 	}
 	doneCh <- struct{}{}
 }
 
-func (s *State) processIncomingData(idx *Indices) {
+func (s *State) processIncomingData(idx *Indices, flushCh chan<- struct{}) {
 	ut := time.Now()
 	logger.Debugf("Updating state, create: %d modify: %d lock: %d at %s", idx.CreateIndex, idx.ModifyIndex, idx.LockIndex, ut)
 	s.createIndex = idx.CreateIndex
 	s.modifyIndex = idx.ModifyIndex
 	s.lockIndex = idx.LockIndex
 	s.lastIncoming = ut
+	flushCh <- struct{}{}
 
 	return
 }
 
-func (s *State) DoProcessIncoming(cidx int, midx int) bool {
+func (s *State) DoProcessIncoming(cidx int64, midx int64) bool {
 	// this *may* need adjusting, in case this check ends up making it so
 	// all incoming work gets skipped
 	if s.createIndex >= cidx && s.modifyIndex >= midx {
@@ -71,14 +81,14 @@ func (s *State) DoProcessIncoming(cidx int, midx int) bool {
 	return true
 }
 
-func (s *State) LastCreateIndex() int {
+func (s *State) LastCreateIndex() int64 {
 	return s.createIndex
 }
 
-func (s *State) LastModifyIndex() int {
+func (s *State) LastModifyIndex() int64 {
 	return s.modifyIndex
 }
 
-func (s *State) LastLockIndex() int {
+func (s *State) LastLockIndex() int64 {
 	return s.lockIndex
 }

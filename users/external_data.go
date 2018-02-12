@@ -107,7 +107,7 @@ func (c *UserExtDataClient) fetchInfo() error {
 		sort.Strings(uInfo.AuthorizedKeys)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
 		
-		logger.Debugf("got a user info: %+v\n", uInfo)
+		logger.Debugf("got a user info: %+v", uInfo)
 		c.info = append(c.info, uInfo)
 	}
 

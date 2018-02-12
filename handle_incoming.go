@@ -32,15 +32,23 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 	for _, k := range keys {
 		switch k := k.(type) {
 		case map[string]interface{}:
-			logger.Debugf("what I expected: %+v\n", k)
+			logger.Debugf("what I expected: %+v", k)
 			var payload string
 
-			if stateHolder != nil && stateHolder.DoProcessIncoming(k["CreateIndex"].(int), k["ModifyIndex"].(int)) {
+			if stateHolder != nil {
+				cidx, _ := k["CreateIndex"].(json.Number).Int64()
+				midx, _ := k["ModifyIndex"].(json.Number).Int64()
+				lidx, _ := k["LockIndex"].(json.Number).Int64()
+				if stateHolder.DoProcessIncoming(cidx, midx) {
+					continue
+				}
 				idx := new(state.Indices)
-				idx.CreateIndex = k["CreateIndex"].(int)
-				idx.ModifyIndex = k["ModifyIndex"].(int)
-				idx.LockIndex = k["LockIndex"].(int)
+				idx.CreateIndex = cidx
+				idx.ModifyIndex = midx
+				idx.LockIndex = lidx
 				idxIncoming = append(idxIncoming, idx)
+			} else {
+				logger.Debugf("erm, stateHolder is nil, but shouldn't be.")
 			}
 			
 			// within one request, everything will be just one kind
@@ -82,7 +90,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 				logger.Errorf(err.Error())
 				continue
 			}
-			logger.Debugf("this is a %s\n", handleDesc[handlingType])
+			logger.Debugf("this is a %s", handleDesc[handlingType])
 			switch handlingType {
 			case keyPrefix:
 				convUsers, err := convertUsersInterfaceSlice(j["users"].([]interface{}))
@@ -105,7 +113,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 		if u2get, err := groups.RemoveDupeUsers(groupLists); err != nil {
 			logger.Errorf(err.Error())
 		} else {
-			logger.Debugf("cleaned up user list: %v\n", u2get)
+			logger.Debugf("cleaned up user list: %v", u2get)
 			uc := users.NewUserExtDataClient(c, config.Config.UserKeyPrefix)
 			usarz, e := uc.GetUsers(u2get)
 			if e != nil {
