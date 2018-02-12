@@ -23,9 +23,11 @@ var handleDesc = map[uint8]string{
 	consulEvent: "event",
 }
 
-func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan *state.Indices, doProcess <-chan bool, keys []interface{}) {
+func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan *state.Indices, keys []interface{}) {
 	var handlingType uint8
 	var groupLists [][]*groups.Member
+
+	idxIncoming := make([]*state.Indices, 0, len(keys))
 
 	for _, k := range keys {
 		switch k := k.(type) {
@@ -33,16 +35,12 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 			logger.Debugf("what I expected: %+v\n", k)
 			var payload string
 
-			if stateHolder != nil {
+			if stateHolder != nil && stateHolder.DoProcessIncoming(k["CreateIndex"].(int), k["ModifyIndex"].(int)) {
 				idx := new(state.Indices)
 				idx.CreateIndex = k["CreateIndex"].(int)
 				idx.ModifyIndex = k["ModifyIndex"].(int)
 				idx.LockIndex = k["LockIndex"].(int)
-				incomingCh <- idx
-				proceed := <-doProcess
-				if !proceed {
-					continue
-				}
+				idxIncoming = append(idxIncoming, idx)
 			}
 			
 			// within one request, everything will be just one kind
@@ -122,6 +120,12 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 		logger.Infof("not handling events (or anything else besides key prefix watches) yet")
 	}
 
+	// Send any index updates to the state to process
+	if stateHolder != nil {
+		for _, idx := range idxIncoming {
+			incomingCh <- idx
+		}
+	}
 }
 
 func convertUsersInterfaceSlice(u []interface{}) ([]*groups.Member, error) {

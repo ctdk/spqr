@@ -22,12 +22,11 @@ func main() {
 	var stateHolder *state.State
 	inCh := make(chan *state.Indices)
 	errCh := make(chan error)
-	doProcess := make(chan bool)
 	doneCh := make(chan struct{})
 
 	if config.Config.StateFile != "" {
 		logger.Debugf("setting up the state file")
-		go state.InitState(stateHolder, config.Config.StateFile, inCh, errCh, doProcess, doneCh)
+		go state.InitState(stateHolder, config.Config.StateFile, inCh, errCh, doneCh)
 		err = <- errCh
 		if err != nil {
 			logger.Fatalf(err.Error())
@@ -56,7 +55,7 @@ func main() {
 			break
 		}
 		logger.Debugf("key prefix or event, probably (don't care about the other possibilities)")
-		handleIncoming(consulClient, stateHolder, inCh, doProcess, incoming)
+		handleIncoming(consulClient, stateHolder, inCh, incoming)
 	default:
 		logger.Debugf("Not anything we're interested in: %T", incoming)
 	}
