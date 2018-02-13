@@ -28,6 +28,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 	var groupLists [][]*groups.Member
 
 	idxIncoming := make([]*state.Indices, 0, len(keys))
+	logger.Debugf("Number of keys incoming: %d", len(keys))
 
 	for _, k := range keys {
 		switch k := k.(type) {
@@ -39,7 +40,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 				cidx, _ := k["CreateIndex"].(json.Number).Int64()
 				midx, _ := k["ModifyIndex"].(json.Number).Int64()
 				lidx, _ := k["LockIndex"].(json.Number).Int64()
-				if stateHolder.DoProcessIncoming(cidx, midx) {
+				if !stateHolder.DoProcessIncoming(cidx, midx) {
 					continue
 				}
 				idx := new(state.Indices)
@@ -133,6 +134,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 		for _, idx := range idxIncoming {
 			incomingCh <- idx
 		}
+		close(incomingCh)
 	}
 }
 

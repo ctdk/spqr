@@ -154,7 +154,7 @@ func (u *User) writeOutKeys() error {
 func (u *User) deleteAuthKeys() error {
 	authKeyPath := u.authorizedKeyPath()
 	err := os.Remove(authKeyPath)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	logger.Debugf("deleted authorized keys for %s", u.Username)

@@ -46,26 +46,21 @@ func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices
 	errch <- nil
 	close(errch)
 
-	flushCh := make(chan struct{})
-	go func(){
-		<- flushCh
-		mapped.Flush()
-	}()
-
+	logger.Debugf("waiting for incoming events")
 	for idx := range incomingCh {
-		(*stateHolder).processIncomingData(idx, flushCh)
+		(*stateHolder).processIncomingData(idx)
 	}
+	
 	doneCh <- struct{}{}
 }
 
-func (s *State) processIncomingData(idx *Indices, flushCh chan<- struct{}) {
+func (s *State) processIncomingData(idx *Indices) {
 	ut := time.Now()
 	logger.Debugf("Updating state, create: %d modify: %d lock: %d at %s", idx.CreateIndex, idx.ModifyIndex, idx.LockIndex, ut)
 	s.createIndex = idx.CreateIndex
 	s.modifyIndex = idx.ModifyIndex
 	s.lockIndex = idx.LockIndex
 	s.lastIncoming = ut
-	flushCh <- struct{}{}
 
 	return
 }
@@ -73,7 +68,7 @@ func (s *State) processIncomingData(idx *Indices, flushCh chan<- struct{}) {
 func (s *State) DoProcessIncoming(cidx int64, midx int64) bool {
 	// this *may* need adjusting, in case this check ends up making it so
 	// all incoming work gets skipped
-	if s.createIndex >= cidx && s.modifyIndex >= midx {
+	if s.modifyIndex >= midx {
 		logger.Debugf("Not processing incoming payload: create: %d vs %d, modify %d vs %d", s.createIndex, cidx, s.modifyIndex, midx)
 		return false
 	}

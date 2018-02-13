@@ -59,6 +59,8 @@ func main() {
 	default:
 		logger.Debugf("Not anything we're interested in: %T", incoming)
 	}
+	<- doneCh
+	logger.Debugf("received done signal, exiting")
 }
 
 func configureConsul() (*consul.Client, error) {

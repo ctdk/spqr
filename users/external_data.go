@@ -93,6 +93,12 @@ func (c *UserExtDataClient) fetchInfo() error {
 		if err != nil {
 			return err
 		}
+
+		if kval == nil {
+			logger.Errorf("User '%s' not found under '%s'", name, c.userKeyPrefix)
+			continue
+		}
+
 		uInfo := new(UserInfo)
 		err = json.Unmarshal(kval.Value, &uInfo)
 		if err != nil {
