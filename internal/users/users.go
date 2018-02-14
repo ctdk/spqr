@@ -19,14 +19,11 @@
 package users
 
 import (
-	"errors"
 	"fmt"
 	"github.com/tideland/golib/logger"
 	"os/user"
 	"sort"
 )
-
-var UserNotFound error = errors.New("That user was not found")
 
 type UserAction string
 
@@ -69,8 +66,14 @@ func Get(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	u := &User{osUser, nil, "", NullAction, nil, false, false}
+
 	err = u.fillInUser()
+	if err != nil {
+		return nil, err
+	}
+
 	gids, _ := u.GroupIds()
 
 	for _, g := range gids {
@@ -78,10 +81,7 @@ func Get(username string) (*User, error) {
 		u.Groups = append(u.Groups, gr.Name)
 	}
 	sort.Strings(u.Groups)
-
-	if err != nil {
-		return nil, err
-	}
+	
 	return u, nil
 }
 

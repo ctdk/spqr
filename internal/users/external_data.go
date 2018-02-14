@@ -37,17 +37,17 @@ func NewUserExtDataClient(c *consul.Client, userKeyPrefix string) *UserExtDataCl
 }
 
 // get user information out of consul, get any that are present on the
-func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, error) {
+func (c *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, error) {
 	logger.Debugf("In GetUsers")
 	uinfo := make([]*UserInfo, 0, len(userList))
-	client.userList = userList
-	client.info = uinfo
-	err := client.fetchInfo()
+	c.userList = userList
+	c.info = uinfo
+	err := c.fetchInfo()
 	if err != nil {
 		return nil, err
 	}
-	usarz := make([]*User, 0, len(client.info))
-	for _, uEntry := range client.info {
+	usarz := make([]*User, 0, len(c.info))
+	for _, uEntry := range c.info {
 		logger.Debugf("Getting entry for %s. Does not exist? %v", uEntry.Username, uEntry.DoesNotExist)
 		if uEntry.DoesNotExist {
 			// A user needs to be created.
