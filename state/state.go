@@ -39,7 +39,7 @@ func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices
 	}
 	defer mapped.Unmap()
 
-	logger.Debugf("Mapped state file, initializing state: %v", mapped)
+	logger.Debugf("Mapped state file")
 	*stateHolder = (*State)(unsafe.Pointer(&mapped[0]))
 
 	// wait to send error back until state map is mapped
