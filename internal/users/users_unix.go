@@ -24,7 +24,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"github.com/ctdk/spqr/util"
+	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
 	"fmt"
 	"math/big"

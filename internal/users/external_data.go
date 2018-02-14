@@ -18,7 +18,7 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/ctdk/spqr/groups"
+	"github.com/ctdk/spqr/internal/groups"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/tideland/golib/logger"
 	"sort"

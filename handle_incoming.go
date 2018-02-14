@@ -17,10 +17,10 @@
 package main
 
 import (
-	"github.com/ctdk/spqr/config"
-	"github.com/ctdk/spqr/users"
-	"github.com/ctdk/spqr/groups"
-	"github.com/ctdk/spqr/state"
+	"github.com/ctdk/spqr/internal/config"
+	"github.com/ctdk/spqr/internal/users"
+	"github.com/ctdk/spqr/internal/groups"
+	"github.com/ctdk/spqr/internal/state"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/tideland/golib/logger"
 	"encoding/base64"
