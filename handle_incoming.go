@@ -17,15 +17,15 @@
 package main
 
 import (
-	"github.com/ctdk/spqr/internal/config"
-	"github.com/ctdk/spqr/internal/users"
-	"github.com/ctdk/spqr/internal/groups"
-	"github.com/ctdk/spqr/internal/state"
-	consul "github.com/hashicorp/consul/api"
-	"github.com/tideland/golib/logger"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ctdk/spqr/internal/config"
+	"github.com/ctdk/spqr/internal/groups"
+	"github.com/ctdk/spqr/internal/state"
+	"github.com/ctdk/spqr/internal/users"
+	consul "github.com/hashicorp/consul/api"
+	"github.com/tideland/golib/logger"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 )
 
 var handleDesc = map[uint8]string{
-	keyPrefix: "key prefix",
+	keyPrefix:   "key prefix",
 	consulEvent: "event",
 }
 
@@ -67,7 +67,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 			} else {
 				logger.Debugf("erm, stateHolder is nil, but shouldn't be.")
 			}
-			
+
 			// within one request, everything will be just one kind
 			// of thing so this only needs to be checked once.
 			if handlingType == notAThing {

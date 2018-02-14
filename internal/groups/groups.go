@@ -19,26 +19,26 @@
 package groups
 
 import (
-	"github.com/tideland/golib/logger"
-	"fmt"
 	"errors"
+	"fmt"
+	"github.com/tideland/golib/logger"
 	"sort"
 )
 
 type Member struct {
 	Username string `json:"username"`
-	Status string `json:"status"`
+	Status   string `json:"status"`
 }
 
 const (
-	Enabled = "enabled"
+	Enabled  = "enabled"
 	Disabled = "disabled"
 )
 
 type GroupMembers []*Member
 
-func (gm GroupMembers) Len() int { return len(gm) }
-func (gm GroupMembers) Swap(i, j int) { gm[i], gm[j] = gm[j], gm[i] }
+func (gm GroupMembers) Len() int           { return len(gm) }
+func (gm GroupMembers) Swap(i, j int)      { gm[i], gm[j] = gm[j], gm[i] }
 func (gm GroupMembers) Less(i, j int) bool { return gm[i].Username < gm[j].Username }
 
 func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
@@ -93,7 +93,7 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 			continue
 		}
 		if u.Status != Enabled {
-			for z := i+1; z < (i + s) - 1; z++ {
+			for z := i + 1; z < (i+s)-1; z++ {
 				if list[z].Status == Enabled {
 					u.Status = Enabled
 					break

@@ -20,6 +20,8 @@
 
 // just stubs right now though
 
+package users
+
 import (
 	"errors"
 )

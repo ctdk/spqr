@@ -44,7 +44,7 @@ func main() {
 	if config.Config.StateFile != "" {
 		logger.Debugf("setting up the state file")
 		go state.InitState(&stateHolder, config.Config.StateFile, inCh, errCh, doneCh)
-		err = <- errCh
+		err = <-errCh
 		if err != nil {
 			logger.Fatalf(err.Error())
 		}
@@ -76,7 +76,7 @@ func main() {
 	default:
 		logger.Debugf("Not anything we're interested in: %T", incoming)
 	}
-	<- doneCh
+	<-doneCh
 	logger.Debugf("received done signal, exiting")
 }
 

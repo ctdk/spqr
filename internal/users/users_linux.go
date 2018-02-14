@@ -40,7 +40,7 @@ func (u *User) osCreateUser() error {
 	if u.Name != "" {
 		useraddArgs = append(useraddArgs, []string{"-c", u.Name}...)
 	}
-	
+
 	if len(u.Groups) > 0 {
 		useraddArgs = append(useraddArgs, []string{"-G", strings.Join(u.Groups, ",")}...)
 	}
@@ -53,14 +53,14 @@ func (u *User) osCreateUser() error {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	
+
 	useradd := exec.Command(useraddPath, useraddArgs...)
-   	useradd.Stdout = &stdout
+	useradd.Stdout = &stdout
 	useradd.Stderr = &stderr
 
 	err = useradd.Run()
 	if err != nil {
-		ferr := fmt.Errorf("Error received while trying to create user: %s -- error from useradd program: %s", err.Error(), stderr.String())	
+		ferr := fmt.Errorf("Error received while trying to create user: %s -- error from useradd program: %s", err.Error(), stderr.String())
 		return ferr
 	}
 
@@ -89,7 +89,7 @@ func osMakeNewGroup(groupName string) error {
 	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	
+
 	groupadd := exec.Command(groupaddPath, groupName)
 	groupadd.Stdout = &stdout
 	groupadd.Stderr = &stderr

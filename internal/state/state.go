@@ -25,16 +25,16 @@ import (
 )
 
 type State struct {
-	createIndex int64
-	modifyIndex int64
-	lockIndex int64
+	createIndex  int64
+	modifyIndex  int64
+	lockIndex    int64
 	lastIncoming time.Time
 }
 
 type Indices struct {
 	CreateIndex int64
 	ModifyIndex int64
-	LockIndex int64
+	LockIndex   int64
 }
 
 func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices, errch chan<- error, doneCh chan<- struct{}) {
@@ -44,7 +44,7 @@ func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices
 		return
 	}
 	defer fp.Close()
-	
+
 	logger.Debugf("Allocating %d bytes for state.", unsafe.Sizeof(**stateHolder))
 	fp.Truncate(int64(unsafe.Sizeof(**stateHolder)))
 	mapped, err := mmap.Map(fp, mmap.RDWR, 0)
@@ -66,7 +66,7 @@ func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices
 	for idx := range incomingCh {
 		(*stateHolder).processIncomingData(idx)
 	}
-	
+
 	doneCh <- struct{}{}
 }
 

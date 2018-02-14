@@ -32,29 +32,29 @@ type UserAction string
 
 const (
 	NullAction UserAction = "null"
-	Create = "create"
-	Disable = "disable"
+	Create                = "create"
+	Disable               = "disable"
 )
 
 type User struct {
 	*user.User
 	AuthorizedKeys []string
-	Shell string
-	Action UserAction
-	Groups []string
-	changed bool
-	notExist bool
+	Shell          string
+	Action         UserAction
+	Groups         []string
+	changed        bool
+	notExist       bool
 }
 
 type UserInfo struct {
-	Username string `json:"username"`
-	Name string `json:"full_name"`
-	Groups []string `json:"groups"`
-	HomeDir string `json:"home_dir"`
-	Shell string `json:"shell"`
-	Action UserAction `json:"action"`
-	DoesNotExist bool `json:"does_not_exist"`
-	AuthorizedKeys []string `json:"authorized_keys"`
+	Username       string     `json:"username"`
+	Name           string     `json:"full_name"`
+	Groups         []string   `json:"groups"`
+	HomeDir        string     `json:"home_dir"`
+	Shell          string     `json:"shell"`
+	Action         UserAction `json:"action"`
+	DoesNotExist   bool       `json:"does_not_exist"`
+	AuthorizedKeys []string   `json:"authorized_keys"`
 }
 
 // New creates a new user. It's a pass-through to an OS-specific function, see

@@ -35,21 +35,21 @@ var GitHash = "unknown"
 
 type Conf struct {
 	ConsulHttpAddr string
-	UserKeyPrefix string
-	DebugLevel int
-	LogFile string
-	SysLog bool
-	StateFile string
+	UserKeyPrefix  string
+	DebugLevel     int
+	LogFile        string
+	SysLog         bool
+	StateFile      string
 }
 
 type Options struct {
-	Version bool `short:"v" long:"version" description:"Print version info."`
+	Version        bool   `short:"v" long:"version" description:"Print version info."`
 	ConsulHttpAddr string `short:"C" long:"consul-http-addr" description:"Consul HTTP API endpoint. Defaults to http://127.0.0.1:8500. Shares the same CONSUL_HTTP_ADDR environment variable as consul itself as well." env:"CONSUL_HTTP_ADDR"`
-	UserKeyPrefix string `short:"P" long:"user-key-prefix" description:"Consul key prefix for user data. Default value: 'org/default/users'." env:"SPQR_USER_KEY_PREFIX"`
-	LogFile string `short:"L" long:"log-file" description:"Log to file X" env:"SPQR_LOG_FILE"`
-	SysLog bool `short:"S" long:"syslog" description:"Log to syslog rather than to a log file. Incompatible with -L/--log-file." env:"SPQR_SYSLOG"`
-	StateFile string `short:"s" long:"statefile" description:"Store spqr's state in this file."`
-	Verbose              []bool       `short:"V" long:"verbose" description:"Show verbose debug information. Repeat for more verbosity."`
+	UserKeyPrefix  string `short:"P" long:"user-key-prefix" description:"Consul key prefix for user data. Default value: 'org/default/users'." env:"SPQR_USER_KEY_PREFIX"`
+	LogFile        string `short:"L" long:"log-file" description:"Log to file X" env:"SPQR_LOG_FILE"`
+	SysLog         bool   `short:"S" long:"syslog" description:"Log to syslog rather than to a log file. Incompatible with -L/--log-file." env:"SPQR_SYSLOG"`
+	StateFile      string `short:"s" long:"statefile" description:"Store spqr's state in this file."`
+	Verbose        []bool `short:"V" long:"verbose" description:"Show verbose debug information. Repeat for more verbosity."`
 }
 
 func initConfig() *Conf { return &Conf{} }

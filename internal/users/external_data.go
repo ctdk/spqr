@@ -27,13 +27,13 @@ import (
 
 type UserExtDataClient struct {
 	*consul.Client
-	userList []*groups.Member
-	info []*UserInfo
+	userList      []*groups.Member
+	info          []*UserInfo
 	userKeyPrefix string
 }
 
 func NewUserExtDataClient(c *consul.Client, userKeyPrefix string) *UserExtDataClient {
-	return &UserExtDataClient{c, []*groups.Member{}, []*UserInfo{}, userKeyPrefix,}
+	return &UserExtDataClient{c, []*groups.Member{}, []*UserInfo{}, userKeyPrefix}
 }
 
 // get user information out of consul, get any that are present on the
@@ -75,7 +75,7 @@ func (client *UserExtDataClient) GetUsers(userList []*groups.Member) ([]*User, e
 
 func (ui *UserInfo) populateUser() (*User, error) {
 	u, err := Get(ui.Username)
-	if err != nil { 
+	if err != nil {
 		// The user wasn't found
 		return nil, err
 	} else {
@@ -128,7 +128,7 @@ func (c *UserExtDataClient) fetchInfo() error {
 		}
 		sort.Strings(uInfo.AuthorizedKeys)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
-		
+
 		logger.Debugf("got a user info: %+v", uInfo)
 		c.info = append(c.info, uInfo)
 	}

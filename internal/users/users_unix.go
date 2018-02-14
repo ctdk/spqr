@@ -24,22 +24,23 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
-	"fmt"
 	"math/big"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
-	"sort"
 )
 
 const sshDirPerm = 0700
 const authKeyPerm = 0644
 const maxTmpDirNumBase int64 = 0xFFFFFFFF
+
 var maxTmpDirNum *big.Int
 
 const DefaultShell = "/bin/bash"
@@ -86,7 +87,7 @@ func getAuthorizedKeys(authorizedKeyFile string) ([]string, error) {
 			return nil, err
 		}
 	}
-	
+
 	sort.Strings(authorizedKeys)
 
 	return authorizedKeys, nil
@@ -137,7 +138,7 @@ func (u *User) writeOutKeys() error {
 		if err != nil {
 			return err
 		}
-	} 
+	}
 
 	tmpAuthKeys, err := u.createTempAuthKeyFile(authorizedKeyDir)
 	if err != nil {
@@ -156,7 +157,7 @@ func (u *User) writeOutKeys() error {
 			return err
 		}
 	}
-	
+
 	tmpAuthKeyPath := tmpAuthKeys.Name()
 	tmpAuthKeys.Close()
 	err = os.Rename(tmpAuthKeyPath, authorizedKeyFile)
@@ -253,6 +254,7 @@ func userExists(userName string) bool {
 	}
 	return false
 }
+
 // chsh might not be appropriate for dwarwin at least
 func (u *User) setNoLogin() error {
 	return u.changeShell("/sbin/nologin")
