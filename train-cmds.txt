@@ -85,3 +85,12 @@
 ----
 consul agent -dev -bind=$IPADDR -advertise=$IPADDR -client=$IPADDR
 docker run --name spqr-dev -v /Users/c-jeremy.bingham/go/src:/go/src -v /Users/c-jeremy.bingham/consul-linux:/consul -it golang /bin/bash
+
+export IPADDRESS=192.168.10.114
+export CONSUL_HTTP_ADDR=http://$IPADDRESS:8500
+root@57cfe237a828:/go/src/github.com/ctdk/spqr# /consul/consul watch -type=keyprefix -prefix=org/default/groups /go/src/github.com/ctdk/spqr/spqr
+
+meluhha:spqr-dev c-jeremy.bingham$ consul event -name=user-update '{ "users": [ { "username": "foo", "status": "enabled" }, { "username": "bar", "status": "enabled" }, { "username": "baz", "status": "enabled" } ] }'
+Event ID: f46b6ce9-867c-814e-72f4-331881be95a7
+meluhha:spqr-dev c-jeremy.bingham$ consul kv put org/default/groups/ops '{ "users": [ { "username": "foo", "status": "enabled" }, { "username": "bar", "status": "enabled" }, { "username": "baz", "status": "enabled" } ] }'
+Success! Data written to: org/default/groups/ops
