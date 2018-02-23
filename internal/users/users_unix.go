@@ -288,7 +288,7 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 	u.Action = uEntry.Action
 
 	// bug out if the user's disabled or will be shortly
-	if u.Action = Disable {
+	if u.Action == Disable {
 		return nil
 	}
 
