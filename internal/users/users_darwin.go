@@ -35,3 +35,7 @@ func getShell(username string) (string, error) {
 func osMakeNewGroup(groupName string) error {
 	return errors.New("creating new groups is not supported on darwin")
 }
+
+func (u *User) killProcesses() error {
+	return errors.New("killProcesses not implemented on darwin")
+}

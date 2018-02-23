@@ -104,6 +104,11 @@ func (u *User) Disable() error {
 		return err
 	}
 
+	err = u.killProcesses()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

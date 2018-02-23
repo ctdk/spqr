@@ -287,9 +287,14 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 	// Set the action, eh
 	u.Action = uEntry.Action
 
+	// bug out if the user's disabled or will be shortly
+	if u.Action = Disable {
+		return nil
+	}
+
 	// Low hanging fruit first - check if the shell and ssh keys need to be
 	// changed.
-	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
+	if u.Shell != uEntry.Shell {
 		u.Shell = uEntry.Shell
 		u.changed = true
 	}
@@ -303,4 +308,8 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		u.changed = true
 	}
 	return nil
+}
+
+func getDefaultShell() string {
+	return "/bin/bash"
 }

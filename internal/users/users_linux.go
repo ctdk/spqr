@@ -121,3 +121,13 @@ func getShell(username string) (string, error) {
 	}
 	return shell, nil
 }
+
+func (u *User) killProcesses() error {
+	if u.Uid == "0" {
+		return fmt.Errorf("Will not kill processes for uid 0")
+	}
+
+	// start looking for processes
+
+	return nil
+}

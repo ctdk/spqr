@@ -123,6 +123,9 @@ func (c *UserExtDataClient) fetchInfo() error {
 		if uInfo.Username == "" {
 			uInfo.Username = uInfo.Name
 		}
+		if uInfo.Shell == "" {
+			uInfo.Shell = getDefaultShell()
+		}
 		if member.Status == groups.Disabled {
 			uInfo.Action = Disable
 		}
