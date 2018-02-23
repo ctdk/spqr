@@ -24,6 +24,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/ctdk/spqr/internal/processes"
 	"os"
 	"os/exec"
 	"strings"
@@ -127,7 +128,6 @@ func (u *User) killProcesses() error {
 		return fmt.Errorf("Will not kill processes for uid 0")
 	}
 
-	// start looking for processes
-
-	return nil
+	// kill the processes
+	return processes.KillUserProcesses(u.Uid)
 }
