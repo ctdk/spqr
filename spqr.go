@@ -66,6 +66,9 @@ func main() {
 	switch incoming := incoming.(type) {
 	case nil:
 		logger.Debugf("nil event, won't do anything")
+		var h *state.Indices
+		inCh <- h
+		close(inCh)
 	case []interface{}:
 		if len(incoming) == 0 {
 			logger.Debugf("empty item, skipping")
@@ -75,6 +78,9 @@ func main() {
 		handleIncoming(consulClient, stateHolder, inCh, incoming)
 	default:
 		logger.Debugf("Not anything we're interested in: %T", incoming)
+		var h *state.Indices
+		inCh <- h
+		close(inCh)
 	}
 	<-doneCh
 	logger.Debugf("received done signal, exiting")

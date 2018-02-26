@@ -69,10 +69,10 @@ func findUserProcesses(uid string) ([]*os.Process, error) {
 			// Try and read the info from /proc/PID/stat. If it
 			// fails the process may have disappeared or ended, so
 			// there's no need to blow up.
-			statusPath := path.Join(n, "status")
+			statusPath := path.Join("/proc", n, "status")
 			status, err := os.Open(statusPath)
 			if err != nil {
-				logger.Debugf("Process status %s open failed, moving on: %s", err.Error())
+				logger.Debugf("Process status %s open failed, moving on: %s", n, err.Error())
 				continue
 			}
 			defer status.Close()

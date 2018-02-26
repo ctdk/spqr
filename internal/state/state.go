@@ -71,6 +71,10 @@ func InitState(stateHolder **State, statePath string, incomingCh <-chan *Indices
 }
 
 func (s *State) processIncomingData(idx *Indices) {
+	if idx == nil {
+		logger.Debugf("nil idx struct received, bailing")
+		return
+	}
 	ut := time.Now()
 	logger.Debugf("Updating state, create: %d modify: %d lock: %d at %s", idx.CreateIndex, idx.ModifyIndex, idx.LockIndex, ut)
 	s.createIndex = idx.CreateIndex

@@ -144,9 +144,11 @@ func ProcessUsers(userList []*User) error {
 				return uerr
 			}
 		} else if u.Action == Disable {
-			err := u.Disable()
-			if err != nil {
-				return err
+			if !u.notExist {
+				err := u.Disable()
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			err := u.Update()
