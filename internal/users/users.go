@@ -39,14 +39,17 @@ type User struct {
 	Shell          string
 	Action         UserAction
 	Groups         []string
+	PrimaryGroup   string
 	changed        bool
 	notExist       bool
+	oldGroups      []string
 }
 
 type UserInfo struct {
 	Username       string     `json:"username"`
 	Name           string     `json:"full_name"`
 	Groups         []string   `json:"groups"`
+	PrimaryGroup   string     `json:"primary_group"` 	
 	HomeDir        string     `json:"home_dir"`
 	Shell          string     `json:"shell"`
 	Action         UserAction `json:"action"`
@@ -74,13 +77,24 @@ func Get(username string) (*User, error) {
 		return nil, err
 	}
 
+	pg, err := u.getPrimaryGroup()
+	if err != nil {
+		return nil, err
+	}
+	u.PrimaryGroup = pg
+
 	gids, _ := u.GroupIds()
 
 	for _, g := range gids {
 		gr, _ := user.LookupGroupId(g)
+		if gr == u.PrimaryGroup {
+			continue
+		}
 		u.Groups = append(u.Groups, gr.Name)
 	}
 	sort.Strings(u.Groups)
+
+
 	
 	return u, nil
 }

@@ -307,7 +307,38 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		u.AuthorizedKeys = uEntry.AuthorizedKeys
 		u.changed = true
 	}
+
+	if !util.SliceEqual(uEntry.Groups, u.Groups) {
+		u.oldGroups = u.Groups
+		u.Groups = uEntry.Groups
+		u.changed = true
+	}
+
+	if uEntry.PrimaryGroup && (u.PrimaryGroup != uEntry.PrimaryGroup) {
+		u.PrimaryGroup = uEntry.PrimaryGroup
+		u.changed = true
+	}
+
+
 	return nil
+}
+
+func (u *User) getPrimaryGroup() (string, error) {
+	idPath, err := exec.LookPath("id")
+	// this would be astonishing
+	if err != nil {
+		return "", err
+	}
+	idcmd := exec.Command(idPath, "-g", "-n", u.Username)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	idcmd.Stdout = stdout
+	idcmd.Stderr = stderr
+	err = idcmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("Something when wrong getting %s's primary group: %s :: %s", u.Username, err.Error(), stderr.String())
+	}
+	return stdout.String(), nil
 }
 
 func getDefaultShell() string {

@@ -46,6 +46,10 @@ func (u *User) osCreateUser() error {
 		useraddArgs = append(useraddArgs, []string{"-G", strings.Join(u.Groups, ",")}...)
 	}
 
+	if u.PrimaryGroup != nil {
+		userAddArgs = append(userAddArgs, []string{"-g", u.PrimaryGroup})
+	}
+
 	if u.HomeDir != "" {
 		useraddArgs = append(useraddArgs, "-d", u.HomeDir)
 	}

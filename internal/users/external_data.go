@@ -130,6 +130,7 @@ func (c *UserExtDataClient) fetchInfo() error {
 			uInfo.Action = Disable
 		}
 		sort.Strings(uInfo.AuthorizedKeys)
+		sort.Strings(uInfo.Groups)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
 
 		logger.Debugf("got a user info: %+v", uInfo)
