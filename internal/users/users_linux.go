@@ -155,7 +155,7 @@ func (u *User) clearExtraGroups() error {
 func (u *User) updateGroups() error {
 	userModArgs := []string{"-G", strings.Join(u.Groups, ",")}
 	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
-	return runUserMod(userModArgs)
+	return u.runUserMod(userModArgs)
 }
 
 func (u *User) runUserMod(userModArgs []string) error {
@@ -166,7 +166,7 @@ func (u *User) runUserMod(userModArgs []string) error {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	userModArgs = append(userModArgs, u.Username)
-	usermod := exec.Command(usermodPath, userModArgs)
+	usermod := exec.Command(usermodPath, userModArgs...)
 	usermod.Stdout = &stdout
 	usermod.Stderr = &stderr
 
