@@ -39,3 +39,10 @@ func osMakeNewGroup(groupName string) error {
 func (u *User) killProcesses() error {
 	return errors.New("killProcesses not implemented on darwin")
 }
+
+func (u *User) clearExtraGroups() error {
+	return errors.New("clearExtraGroups not implemented on darwin")
+}
+func (u *User) updateGroups() error {
+	return errors.New("updateGroups not implemented on darwin")
+}
