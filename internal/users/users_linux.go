@@ -153,19 +153,26 @@ func (u *User) clearExtraGroups() error {
 }
 
 func (u *User) updateGroups() error {
+	userModArgs := []string{"-G", strings.Join(u.Groups, ",")}
+	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
+	return runUserMod(userModArgs)
+}
+
+func (u *User) runUserMod(userModArgs []string) error {
 	usermodPath, err := exec.LookPath("usermod")
 	if err != nil {
 		return err
 	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	usermod := exec.Command(usermodPath, "-G", strings.Join(u.Groups, ","), u.Username)
+	userModArgs = append(userModArgs, u.Username)
+	usermod := exec.Command(usermodPath, userModArgs)
 	usermod.Stdout = &stdout
 	usermod.Stderr = &stderr
-	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
+
 	err = usermod.Run()
 	if err != nil {
-		return fmt.Errorf("Error received while modifying %s's groups: %s :: %s", err.Error(), stderr.String())
+		return fmt.Errorf("Error received while modifying %s: %s :: %s", err.Error(), stderr.String())
 	}
 	return nil
 }
