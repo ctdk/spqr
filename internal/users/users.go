@@ -42,7 +42,6 @@ type User struct {
 	PrimaryGroup   string
 	changed        bool
 	notExist       bool
-	oldGroups      []string
 }
 
 type UserInfo struct {
@@ -70,7 +69,7 @@ func Get(username string) (*User, error) {
 		return nil, err
 	}
 
-	u := &User{osUser, nil, "", NullAction, nil, "", false, false, nil}
+	u := &User{osUser, nil, "", NullAction, nil, "", false, false}
 
 	err = u.fillInUser()
 	if err != nil {
@@ -78,6 +77,7 @@ func Get(username string) (*User, error) {
 	}
 
 	pg, err := u.getPrimaryGroup()
+	logger.Debugf("primary group for %s: '%s'", u.Username, pg)
 	if err != nil {
 		return nil, err
 	}

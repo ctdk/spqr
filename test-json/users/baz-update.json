@@ -1,9 +1,9 @@
 {
   "username": "baz",
   "full_name": "Baz McBazzick",
-  "groups": ["sudo", "bazzer"],
+  "groups": ["sudo", "bazzer", "sysadmins"],
   "action": "create",
-  "shell": "/bin/sh",
+  "shell": "/bin/bash",
   "authorized_keys": [
     "ssh-rsa AAAAAAAAAAA baz@q.local",
     "ssh-rsa AAAAAA124 baz@hi.local"

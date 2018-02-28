@@ -130,7 +130,6 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 		if u2get, err := groups.RemoveDupeUsers(groupLists); err != nil {
 			logger.Errorf(err.Error())
 		} else {
-			logger.Debugf("cleaned up user list: %v", u2get)
 			uc := users.NewUserExtDataClient(c, config.Config.UserKeyPrefix)
 			usarz, e := uc.GetUsers(u2get)
 			if e != nil {

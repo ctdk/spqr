@@ -202,7 +202,7 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	}
 
 	n := new(user.User)
-	newUser := &User{n, nil, shell, action, groups, "", true, true, nil}
+	newUser := &User{n, nil, shell, action, groups, "", true, true}
 	newUser.Username = userName
 	newUser.Name = fullName
 	newUser.HomeDir = homeDir
@@ -298,7 +298,8 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 
 	// Low hanging fruit first - check if the shell and ssh keys need to be
 	// changed.
-	if u.Shell != uEntry.Shell {
+	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
+		logger.Debugf("shell different for %s: o %s n %s", u.Username, u.Shell, uEntry.Shell)
 		u.Shell = uEntry.Shell
 		u.changed = true
 	}
@@ -308,17 +309,19 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		return err
 	}
 	if !util.SliceEqual(oldKeys, uEntry.AuthorizedKeys) {
+		logger.Debugf("authorized keys for %s didn't match", u.Username)
 		u.AuthorizedKeys = uEntry.AuthorizedKeys
 		u.changed = true
 	}
 
 	if !util.SliceEqual(uEntry.Groups, u.Groups) {
-		u.oldGroups = u.Groups
+		logger.Debugf("groups didn't match for %s: o '%s' n '%s'", u.Username, strings.Join(u.Groups, ","), strings.Join(uEntry.Groups, ","))
 		u.Groups = uEntry.Groups
 		u.changed = true
 	}
 
 	if (uEntry.PrimaryGroup != "") && (u.PrimaryGroup != uEntry.PrimaryGroup) {
+		logger.Debugf("primary group for %s didn't match: o %s n %s", u.Username, u.PrimaryGroup, uEntry.PrimaryGroup)
 		u.PrimaryGroup = uEntry.PrimaryGroup
 		u.changed = true
 	}
@@ -328,21 +331,11 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 }
 
 func (u *User) getPrimaryGroup() (string, error) {
-	idPath, err := exec.LookPath("id")
-	// this would be astonishing
+	gr, err := user.LookupGroupId(u.Gid)
 	if err != nil {
 		return "", err
 	}
-	idcmd := exec.Command(idPath, "-g", "-n", u.Username)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	idcmd.Stdout = &stdout
-	idcmd.Stderr = &stderr
-	err = idcmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("Something went wrong getting %s's primary group: %s :: %s", u.Username, err.Error(), stderr.String())
-	}
-	return stdout.String(), nil
+	return gr.Name, nil
 }
 
 func getDefaultShell() string {

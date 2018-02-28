@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ctdk/spqr/internal/processes"
+	"github.com/tideland/golib/logger"
 	"os"
 	"os/exec"
 	"strings"
@@ -142,7 +143,12 @@ func (u *User) killProcesses() error {
 func (u *User) clearExtraGroups() error {
 	// inside docker at least 'groupmems' required a password to add/remove
 	// users from a group. Weeeeeird.
+	// Bail early if the user is already not in any extra groups
+	if len(u.Groups) == 0 {
+		return nil
+	}
 	u.Groups = make([]string, 0)
+	logger.Debugf("Removing %s from all extra groups", u.Username)
 	return u.updateGroups()
 }
 
@@ -156,6 +162,7 @@ func (u *User) updateGroups() error {
 	usermod := exec.Command(usermodPath, "-G", strings.Join(u.Groups, ","), u.Username)
 	usermod.Stdout = &stdout
 	usermod.Stderr = &stderr
+	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
 	err = usermod.Run()
 	if err != nil {
 		return fmt.Errorf("Error received while modifying %s's groups: %s :: %s", err.Error(), stderr.String())
