@@ -70,7 +70,7 @@ func Get(username string) (*User, error) {
 		return nil, err
 	}
 
-	u := &User{osUser, nil, "", NullAction, nil, false, false}
+	u := &User{osUser, nil, "", NullAction, nil, "", false, false, nil}
 
 	err = u.fillInUser()
 	if err != nil {
@@ -87,7 +87,7 @@ func Get(username string) (*User, error) {
 
 	for _, g := range gids {
 		gr, _ := user.LookupGroupId(g)
-		if gr == u.PrimaryGroup {
+		if gr.Name == u.PrimaryGroup {
 			continue
 		}
 		u.Groups = append(u.Groups, gr.Name)
@@ -114,6 +114,11 @@ func (u *User) Disable() error {
 	}
 
 	err = u.deleteAuthKeys()
+	if err != nil {
+		return err
+	}
+
+	err = u.clearExtraGroups()
 	if err != nil {
 		return err
 	}

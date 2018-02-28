@@ -17,6 +17,9 @@
  */
 
 // linux specific functionality to create users
+// NB: Most/everything in this file is probably applicable to most if not all
+// non-darwin Unixes, so the file may need moved to a new name (with any truly
+// linux-specific items moved back into users_linux.go accordingly).
 
 package users
 
@@ -46,8 +49,8 @@ func (u *User) osCreateUser() error {
 		useraddArgs = append(useraddArgs, []string{"-G", strings.Join(u.Groups, ",")}...)
 	}
 
-	if u.PrimaryGroup != nil {
-		userAddArgs = append(userAddArgs, []string{"-g", u.PrimaryGroup})
+	if u.PrimaryGroup != "" {
+		useraddArgs = append(useraddArgs, []string{"-g", u.PrimaryGroup}...)
 	}
 
 	if u.HomeDir != "" {
@@ -134,4 +137,28 @@ func (u *User) killProcesses() error {
 
 	// kill the processes
 	return processes.KillUserProcesses(u.Uid)
+}
+
+func (u *User) clearExtraGroups() error {
+	// inside docker at least 'groupmems' required a password to add/remove
+	// users from a group. Weeeeeird.
+	u.Groups = make([]string, 0)
+	return u.updateGroups()
+}
+
+func (u *User) updateGroups() error {
+	usermodPath, err := exec.LookPath("usermod")
+	if err != nil {
+		return err
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	usermod := exec.Command(usermodPath, "-G", strings.Join(u.Groups, ","), u.Username)
+	usermod.Stdout = &stdout
+	usermod.Stderr = &stderr
+	err = usermod.Run()
+	if err != nil {
+		return fmt.Errorf("Error received while modifying %s's groups: %s :: %s", err.Error(), stderr.String())
+	}
+	return nil
 }

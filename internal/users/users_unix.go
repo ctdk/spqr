@@ -104,6 +104,10 @@ func (u *User) update() error {
 		return err
 	}
 
+	if err := u.updateGroups(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -198,7 +202,7 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	}
 
 	n := new(user.User)
-	newUser := &User{n, nil, shell, action, groups, true, true}
+	newUser := &User{n, nil, shell, action, groups, "", true, true, nil}
 	newUser.Username = userName
 	newUser.Name = fullName
 	newUser.HomeDir = homeDir
@@ -314,7 +318,7 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		u.changed = true
 	}
 
-	if uEntry.PrimaryGroup && (u.PrimaryGroup != uEntry.PrimaryGroup) {
+	if (uEntry.PrimaryGroup != "") && (u.PrimaryGroup != uEntry.PrimaryGroup) {
 		u.PrimaryGroup = uEntry.PrimaryGroup
 		u.changed = true
 	}
@@ -332,11 +336,11 @@ func (u *User) getPrimaryGroup() (string, error) {
 	idcmd := exec.Command(idPath, "-g", "-n", u.Username)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	idcmd.Stdout = stdout
-	idcmd.Stderr = stderr
+	idcmd.Stdout = &stdout
+	idcmd.Stderr = &stderr
 	err = idcmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("Something when wrong getting %s's primary group: %s :: %s", u.Username, err.Error(), stderr.String())
+		return "", fmt.Errorf("Something went wrong getting %s's primary group: %s :: %s", u.Username, err.Error(), stderr.String())
 	}
 	return stdout.String(), nil
 }
