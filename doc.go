@@ -19,5 +19,4 @@ spqr is a consul based user management utility that watches consul for updates o
 
 Placeholder for more extensive documentation.
 */
-
 package main
