@@ -43,20 +43,20 @@ type Conf struct {
 	ConsulHttpAddr string `toml:"consul-http-addr"`
 	UserKeyPrefix  string `toml:"user-key-prefix"`
 	DebugLevel     int
-	LogLevel string `toml:"log-level"`
+	LogLevel       string `toml:"log-level"`
 	LogFile        string `toml:log-file"`
-	SysLog         bool `toml:"syslog"`
+	SysLog         bool   `toml:"syslog"`
 	StateFile      string `toml:"state-file"`
 }
 
 type Options struct {
 	Version        bool   `short:"v" long:"version" description:"Print version info."`
-	ConfFile string `short:"c" long:"config" description:"Specify a config file to use." env:"SPQR_CONFIG_FILE"`
+	ConfFile       string `short:"c" long:"config" description:"Specify a config file to use." env:"SPQR_CONFIG_FILE"`
 	ConsulHttpAddr string `short:"C" long:"consul-http-addr" description:"Consul HTTP API endpoint. Defaults to http://127.0.0.1:8500. Shares the same CONSUL_HTTP_ADDR environment variable as consul itself as well." env:"CONSUL_HTTP_ADDR"`
 	UserKeyPrefix  string `short:"P" long:"user-key-prefix" description:"Consul key prefix for user data. Default value: 'org/default/users'." env:"SPQR_USER_KEY_PREFIX"`
 	LogFile        string `short:"L" long:"log-file" description:"Log to file X" env:"SPQR_LOG_FILE"`
 	SysLog         bool   `short:"S" long:"syslog" description:"Log to syslog rather than to a log file. Incompatible with -L/--log-file." env:"SPQR_SYSLOG"`
-	LogLevel string `short:"g" long:"log-level" description:"Specify logging verbosity.  Performs the same function as -V, but works like the 'log-level' option in the configuration file. Acceptable values are 'debug', 'info', 'warning', 'error', 'critical', and 'fatal'." env:"SPQR_LOG_LEVEL"`
+	LogLevel       string `short:"g" long:"log-level" description:"Specify logging verbosity.  Performs the same function as -V, but works like the 'log-level' option in the configuration file. Acceptable values are 'debug', 'info', 'warning', 'error', 'critical', and 'fatal'." env:"SPQR_LOG_LEVEL"`
 	StateFile      string `short:"s" long:"statefile" description:"Store spqr's state in this file."`
 	Verbose        []bool `short:"V" long:"verbose" description:"Show verbose debug information. Repeat for more verbosity."`
 }
