@@ -48,7 +48,7 @@ type UserInfo struct {
 	Username       string     `json:"username"`
 	Name           string     `json:"full_name"`
 	Groups         []string   `json:"groups"`
-	PrimaryGroup   string     `json:"primary_group"` 	
+	PrimaryGroup   string     `json:"primary_group"`
 	HomeDir        string     `json:"home_dir"`
 	Shell          string     `json:"shell"`
 	Action         UserAction `json:"action"`
@@ -94,8 +94,6 @@ func Get(username string) (*User, error) {
 	}
 	sort.Strings(u.Groups)
 
-
-	
 	return u, nil
 }
 

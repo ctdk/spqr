@@ -28,7 +28,7 @@ func KillUserProcesses(uid string) error {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("Found %d processes for uid '%s' in round %d", len(procs), uid, i + 1)
+		logger.Debugf("Found %d processes for uid '%s' in round %d", len(procs), uid, i+1)
 
 		if len(procs) == 0 {
 			return nil

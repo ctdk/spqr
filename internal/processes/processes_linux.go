@@ -29,7 +29,7 @@ import (
 
 const (
 	dentryToRead = 10
-	statusBytes = 512
+	statusBytes  = 512
 )
 
 var statusUid = []byte("Uid:")
@@ -43,7 +43,7 @@ func findUserProcesses(uid string) ([]*os.Process, error) {
 	defer procdir.Close()
 
 	buid := []byte(uid)
-	
+
 	pids := make([]int, 0, 50)
 	for {
 		dentries, err := procdir.Readdir(dentryToRead)
@@ -80,8 +80,8 @@ func findUserProcesses(uid string) ([]*os.Process, error) {
 			statusContents := make([]byte, statusBytes)
 			var extraContent []byte
 			var xuid []byte
-			
-			LineRead:
+
+		LineRead:
 			for {
 				nb, ferr := status.Read(statusContents[:statusBytes])
 				if ferr != nil {
@@ -123,7 +123,7 @@ func findUserProcesses(uid string) ([]*os.Process, error) {
 	procs := make([]*os.Process, len(pids))
 	for i, p := range pids {
 		pr, _ := os.FindProcess(p) // it will always find a proc, even
-					   // if it doesn't actually exist.
+		// if it doesn't actually exist.
 		procs[i] = pr
 	}
 	return procs, nil

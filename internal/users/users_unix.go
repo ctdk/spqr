@@ -326,7 +326,6 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		u.changed = true
 	}
 
-
 	return nil
 }
 
