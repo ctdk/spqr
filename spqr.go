@@ -20,7 +20,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/ctdk/spqr/internal/config"
+	"github.com/ctdk/spqr/config"
 	"github.com/ctdk/spqr/internal/state"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/tideland/golib/logger"

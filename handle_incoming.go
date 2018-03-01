@@ -20,7 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/ctdk/spqr/internal/config"
+	"github.com/ctdk/spqr/config"
 	"github.com/ctdk/spqr/internal/groups"
 	"github.com/ctdk/spqr/internal/state"
 	"github.com/ctdk/spqr/internal/users"
