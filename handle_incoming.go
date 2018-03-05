@@ -110,7 +110,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 			logger.Debugf("this is a %s", handleDesc[handlingType])
 			switch handlingType {
 			case keyPrefix:
-				convUsers, err := convertUsersInterfaceSlice(j["users"].([]interface{}))
+				convUsers, err := convertUsersInterfaceSlice(j["members"].([]interface{}))
 				if err != nil {
 					logger.Errorf(err.Error())
 					continue
