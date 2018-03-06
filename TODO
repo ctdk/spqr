@@ -1,0 +1,13 @@
+* Allow loading user and group data into consul via itself, rather than having to load the JSON directly into consul.
+* Streamline some of the code, especially with updating user information.
+* Group definitions in sqpr should also allow specifying common OS groups that all users in that group should be members of.
+* There's a fair number of methods, types, and fields that are being exported that don't need to be. Eventually they should be unexported.
+* Get it working on more platforms, including Windows and MacOS.
+* Watching consul events in addition to key prefixes would be nice, but more thought is required on how it should be best done.
+* Node authentication currently relies on consul ACLs. Making node authetication easier, whether by hiding away the nasty details of the consul ACLs or doing it a different way, would be nice.
+* Integrating with vault would be nice for user things that should be more secret (NB: not sure what those things would be yet), and possibly node authentication (see above).
+* Automated testing. Right now there isn't any because of how it changes the system, but whether by running them in docker or coming up with a way to mock it without docker it's certainly doable.
+* Sample startup scripts.
+* Building packages would be very useful for deploying spqr, to provide startup scripts, configuration, state and log directories, and so forth.
+* Better application documentation.
+* Better developer documentation (for the benefit of anyone else who happens to work on it down the line.
