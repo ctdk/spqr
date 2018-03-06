@@ -100,11 +100,17 @@ func (u *User) update() error {
 		return err
 	}
 
-	if err := u.changeShell(u.Shell); err != nil {
-		return err
+	if u.updated.shell != "" {
+		if err := u.changeShell(u.updated.shell); err != nil {
+			return err
+		}
 	}
 
 	if err := u.updateGroups(); err != nil {
+		return err
+	}
+
+	if err := u.updateName(); err != nil {
 		return err
 	}
 
@@ -202,7 +208,7 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	}
 
 	n := new(user.User)
-	newUser := &User{n, nil, shell, action, groups, "", true, true}
+	newUser := &User{n, nil, shell, action, groups, "", true, true, nil}
 	newUser.Username = userName
 	newUser.Name = fullName
 	newUser.HomeDir = homeDir
@@ -296,11 +302,13 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		return nil
 	}
 
+	uUp := new(userUpdated)
+
 	// Low hanging fruit first - check if the shell and ssh keys need to be
 	// changed.
 	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
 		logger.Debugf("shell different for %s: o %s n %s", u.Username, u.Shell, uEntry.Shell)
-		u.Shell = uEntry.Shell
+		uUp.shell = uEntry.Shell
 		u.changed = true
 	}
 
@@ -310,20 +318,31 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 	}
 	if !util.SliceEqual(oldKeys, uEntry.AuthorizedKeys) {
 		logger.Debugf("authorized keys for %s didn't match", u.Username)
-		u.AuthorizedKeys = uEntry.AuthorizedKeys
+		uUp.authorizedKeys = uEntry.AuthorizedKeys
 		u.changed = true
 	}
 
 	if !util.SliceEqual(uEntry.Groups, u.Groups) {
 		logger.Debugf("groups didn't match for %s: o '%s' n '%s'", u.Username, strings.Join(u.Groups, ","), strings.Join(uEntry.Groups, ","))
-		u.Groups = uEntry.Groups
+		uUp.groups = uEntry.Groups
 		u.changed = true
 	}
 
 	if (uEntry.PrimaryGroup != "") && (u.PrimaryGroup != uEntry.PrimaryGroup) {
 		logger.Debugf("primary group for %s didn't match: o %s n %s", u.Username, u.PrimaryGroup, uEntry.PrimaryGroup)
-		u.PrimaryGroup = uEntry.PrimaryGroup
+		uUp.primaryGroup = uEntry.PrimaryGroup
 		u.changed = true
+	}
+
+	if (uEntry.Name != "") && (uEntry.Name != u.Name) {
+		logger.Debugf("Changing %s's full name from '%s' to '%s'.", u.Username, u.Name, uEntry.Name)
+		uUp.name = uEntry.Name
+		u.changed = true
+	}
+
+	if u.changed == true {
+		logger.Debugf("user %s has information to update")
+		u.updated = uUp
 	}
 
 	return nil

@@ -42,6 +42,7 @@ type User struct {
 	PrimaryGroup   string
 	changed        bool
 	notExist       bool
+	updated *userUpdated
 }
 
 type UserInfo struct {
@@ -54,6 +55,14 @@ type UserInfo struct {
 	Action         UserAction `json:"action"`
 	DoesNotExist   bool       `json:"does_not_exist"`
 	AuthorizedKeys []string   `json:"authorized_keys"`
+}
+
+type userUpdated struct {
+	name string
+	groups []string
+	primaryGroup string
+	shell string
+	authorizedKeys []string
 }
 
 // New creates a new user. It's a pass-through to an OS-specific function, see
@@ -69,7 +78,7 @@ func Get(username string) (*User, error) {
 		return nil, err
 	}
 
-	u := &User{osUser, nil, "", NullAction, nil, "", false, false}
+	u := &User{osUser, nil, "", NullAction, nil, "", false, false, nil}
 
 	err = u.fillInUser()
 	if err != nil {

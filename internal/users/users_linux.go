@@ -147,13 +147,15 @@ func (u *User) clearExtraGroups() error {
 	if len(u.Groups) == 0 {
 		return nil
 	}
-	u.Groups = make([]string, 0)
+	uUp := make(userUpdated)
+	uUp.groups = make([]string, 0)
+	u.updated = uUp
 	logger.Debugf("Removing %s from all extra groups", u.Username)
 	return u.updateGroups()
 }
 
 func (u *User) updateGroups() error {
-	userModArgs := []string{"-G", strings.Join(u.Groups, ",")}
+	userModArgs := []string{"-G", strings.Join(uUp.groups, ",")}
 	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
 	return u.runUserMod(userModArgs)
 }
