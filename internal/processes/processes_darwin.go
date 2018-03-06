@@ -19,7 +19,7 @@
 package processes
 
 import (
-	"error"
+	"errors"
 	"os"
 )
 
