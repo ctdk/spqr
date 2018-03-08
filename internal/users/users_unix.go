@@ -96,8 +96,10 @@ func getAuthorizedKeys(authorizedKeyFile string) ([]string, error) {
 func (u *User) update() error {
 	// TODO: update other fields besides just SSH keys, like shell, various
 	// /etc/passwd entries, etc.
-	if err := u.writeOutKeys(); err != nil {
-		return err
+	if u.updated.authorizedKeys != nil {
+		if err := u.writeOutKeys(u.updated.authorizedKeys); err != nil {
+			return err
+		}
 	}
 
 	if u.updated.shell != "" {
@@ -106,20 +108,24 @@ func (u *User) update() error {
 		}
 	}
 
-	if err := u.updateGroups(); err != nil {
-		return err
+	if u.updated.groups != nil || u.updated.primaryGroup != "" {
+		if err := u.updateGroups(); err != nil {
+			return err
+		}
 	}
 
-	if err := u.updateName(); err != nil {
-		return err
+	if u.updated.name != "" {
+		if err := u.updateGroups(); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (u *User) writeOutKeys() error {
+func (u *User) writeOutKeys(authorizedKeys []string) error {
 	logger.Debugf("writing out authorized keys for %s", u.Username)
-	if len(u.AuthorizedKeys) == 0 {
+	if len(authorizedKeys) == 0 {
 		err := fmt.Errorf("no SSH keys given for %s", u.Username)
 		return err
 	}
@@ -155,7 +161,7 @@ func (u *User) writeOutKeys() error {
 		return err
 	}
 
-	for _, l := range u.AuthorizedKeys {
+	for _, l := range authorizedKeys {
 		_, err = tmpAuthKeys.WriteString(l)
 		if err != nil {
 			tmpAuthKeys.Close()

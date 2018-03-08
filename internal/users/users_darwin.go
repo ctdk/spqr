@@ -47,3 +47,7 @@ func (u *User) clearExtraGroups() error {
 func (u *User) updateGroups() error {
 	return errors.New("updateGroups not implemented on darwin")
 }
+
+func (u *User) updateName() error {
+	return errors.New("updateName not implemented on darwin")
+}

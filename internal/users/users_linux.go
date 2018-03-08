@@ -79,11 +79,10 @@ func (u *User) osCreateUser() error {
 		return err
 	}
 
-	// save the keys
-	authkeys := u.AuthorizedKeys
 	u = nu
-	u.AuthorizedKeys = authkeys
-	err = u.writeOutKeys()
+
+	// save the keys
+	err = u.writeOutKeys(u.AuthorizedKeys)
 	if err != nil {
 		return err
 	}
@@ -147,16 +146,34 @@ func (u *User) clearExtraGroups() error {
 	if len(u.Groups) == 0 {
 		return nil
 	}
-	uUp := make(userUpdated)
+	uUp := new(userUpdated)
 	uUp.groups = make([]string, 0)
 	u.updated = uUp
 	logger.Debugf("Removing %s from all extra groups", u.Username)
 	return u.updateGroups()
 }
 
+func (u *User) updateName() error {
+	userModArgs := []string{"-c", u.updated.name}
+	logger.Debugf("Updating full name for %s to '%s'", u.Username, u.updated.name)
+	return u.runUserMod(userModArgs)
+}
+
 func (u *User) updateGroups() error {
-	userModArgs := []string{"-G", strings.Join(uUp.groups, ",")}
-	logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.Groups, ","))
+	userModArgs := make([]string, 0, 4)
+
+	if u.updated.groups != nil {
+		ua := []string{"-G", strings.Join(u.updated.groups, ",")}
+		logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.updated.groups, ","))
+		userModArgs = append(userModArgs, ua...)
+	}
+
+	if u.updated.primaryGroup != "" {
+		ua := []string{"-g", u.updated.primaryGroup}
+		logger.Debugf("Updating primary group for %s to '%s'", u.Username, u.updated.primaryGroup)
+		userModArgs = append(userModArgs, ua...)
+	}
+
 	return u.runUserMod(userModArgs)
 }
 
