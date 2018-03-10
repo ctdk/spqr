@@ -51,3 +51,7 @@ func (u *User) updateGroups() error {
 func (u *User) updateName() error {
 	return errors.New("updateName not implemented on darwin")
 }
+
+func (u *User) passwdManipulate(lock bool) error {
+	return errors.New("passwdManipulate not implemented on darwin")
+}

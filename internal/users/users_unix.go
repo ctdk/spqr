@@ -103,6 +103,12 @@ func (u *User) update() error {
 	}
 
 	if u.updated.shell != "" {
+		if u.Shell == "/sbin/nologin" {
+			if err := u.passwdManipulate(false); err != nil {
+				return err
+			}
+		}
+
 		if err := u.changeShell(u.updated.shell); err != nil {
 			return err
 		}
