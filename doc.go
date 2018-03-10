@@ -77,7 +77,7 @@ Disabling users
 
 If a user has the action "create", but their status in the group definition is "disabled", or if they're enabled in the group but marked as "disable" in the user definition, the user will be disabled. A user that is marked to be disabled that does not already exist on the system will not be created.
 
-When a user is disabled, their ssh authorized keys are removed, they are removed from all their secondary groups, their login shell is changed to "/sbin/nologin", and their processes are all killed. Their home directories are not removed, and they're still members of their primary group.
+When a user is disabled, their ssh authorized keys are removed, they are removed from all their secondary groups, their login shell is changed to "/sbin/nologin", their account is locked in case they set a password, and their processes are all killed. Their home directories are not removed, and they're still members of their primary group.
 
 Usage
 
