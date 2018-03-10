@@ -212,10 +212,12 @@ func (u *User) passwdManipulate(lock bool) error {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	p := exec.Command(pPath, op, u.Username)
+	p.Stdout = &stdout
+	p.Stderr = &stderr
 
 	err = p.Run()
 	if err != nil {
-		if !(!lock && !strings.Compare(stderr.String(), "passwordless account")) {
+		if !(!lock && !strings.Contains(stderr.String(), "passwordless account")) {
 			return fmt.Errorf("Error received while locking/unlocking account %s: %s :: %s", u.Username, err.Error(), stderr.String())
 		}
 	}
