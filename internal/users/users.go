@@ -151,13 +151,8 @@ func ProcessUsers(userList []*User) error {
 		// Check for OS groups and create them if needed
 		for _, g := range u.Groups {
 			if !existingGroups[g] {
-				logger.Debugf("looking up group %s", g)
-				gPresent, _ := user.LookupGroup(g)
-				if gPresent == nil {
-					err := MakeNewGroup(g)
-					if err != nil {
-						return nil
-					}
+				if err := checkOrCreateGroup(g); err != nil {
+					return err
 				}
 				existingGroups[g] = true
 			}
@@ -181,6 +176,18 @@ func ProcessUsers(userList []*User) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func checkOrCreateGroup(name string) error {
+	logger.Debugf("looking up group %s", name)
+	gPresent, _ := user.LookupGroup(name)
+	if gPresent == nil {
+		err := MakeNewGroup(name)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

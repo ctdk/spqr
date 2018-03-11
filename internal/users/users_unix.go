@@ -121,7 +121,7 @@ func (u *User) update() error {
 	}
 
 	if u.updated.name != "" {
-		if err := u.updateGroups(); err != nil {
+		if err := u.updateName(); err != nil {
 			return err
 		}
 	}
@@ -279,6 +279,9 @@ func userExists(userName string) bool {
 
 // chsh might not be appropriate for dwarwin at least
 func (u *User) setNoLogin() error {
+	if err := u.passwdManipulate(true); err != nil {
+		return err
+	}
 	return u.changeShell("/sbin/nologin")
 }
 
@@ -353,7 +356,7 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 	}
 
 	if u.changed == true {
-		logger.Debugf("user %s has information to update")
+		logger.Debugf("user %s has information to update", u.Username)
 		u.updated = uUp
 	}
 

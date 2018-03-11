@@ -79,10 +79,11 @@ func (u *User) osCreateUser() error {
 		return err
 	}
 
+	authKeys := u.AuthorizedKeys
 	u = nu
 
 	// save the keys
-	err = u.writeOutKeys(u.AuthorizedKeys)
+	err = u.writeOutKeys(authKeys)
 	if err != nil {
 		return err
 	}
@@ -163,6 +164,11 @@ func (u *User) updateGroups() error {
 	userModArgs := make([]string, 0, 4)
 
 	if u.updated.groups != nil {
+		for _, g := range u.updated.groups {
+			if err := checkOrCreateGroup(g); err != nil {
+				return err
+			}
+		}
 		ua := []string{"-G", strings.Join(u.updated.groups, ",")}
 		logger.Debugf("Updating groups for %s to '%s'", u.Username, strings.Join(u.updated.groups, ","))
 		userModArgs = append(userModArgs, ua...)
@@ -174,6 +180,7 @@ func (u *User) updateGroups() error {
 		userModArgs = append(userModArgs, ua...)
 	}
 
+	logger.Debugf("running usermod on '%s' with these arguments: %s", u.Username, strings.Join(userModArgs, " "))
 	return u.runUserMod(userModArgs)
 }
 
@@ -191,7 +198,7 @@ func (u *User) runUserMod(userModArgs []string) error {
 
 	err = usermod.Run()
 	if err != nil {
-		return fmt.Errorf("Error received while modifying %s: %s :: %s", err.Error(), stderr.String())
+		return fmt.Errorf("Error received while modifying %s: %s :: %s", u.Username, err.Error(), stderr.String())
 	}
 	return nil
 }
@@ -217,8 +224,8 @@ func (u *User) passwdManipulate(lock bool) error {
 
 	err = p.Run()
 	if err != nil {
-		if !(!lock && !strings.Contains(stderr.String(), "passwordless account")) {
-			return fmt.Errorf("Error received while locking/unlocking account %s: %s :: %s", u.Username, err.Error(), stderr.String())
+		if !lock && !strings.Contains(stderr.String(), "passwordless account") {
+			return fmt.Errorf("Error received while locking/unlocking account %s: %s :: %s || l %v c %v a %v", u.Username, err.Error(), stderr.String(), !lock, strings.Contains(stderr.String(), "passwordless account"), !(!lock && !strings.Contains(stderr.String(), "passwordless account")))
 		}
 	}
 
