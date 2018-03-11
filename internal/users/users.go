@@ -42,7 +42,7 @@ type User struct {
 	PrimaryGroup   string
 	changed        bool
 	notExist       bool
-	updated *userUpdated
+	updated        *userUpdated
 }
 
 type UserInfo struct {
@@ -58,10 +58,10 @@ type UserInfo struct {
 }
 
 type userUpdated struct {
-	name string
-	groups []string
-	primaryGroup string
-	shell string
+	name           string
+	groups         []string
+	primaryGroup   string
+	shell          string
 	authorizedKeys []string
 }
 

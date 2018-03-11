@@ -69,7 +69,7 @@ The group definition JSON is structured like so:
 	  ]
 	}
 
-There's rather less to the groups than there is to the user definitions. There's just an array of hashes named "members", where each hash has "username" and "status" keys. The available statuses are "enabled" and "disabled". 
+There's rather less to the groups than there is to the user definitions. There's just an array of hashes named "members", where each hash has "username" and "status" keys. The available statuses are "enabled" and "disabled".
 
 While the only hard constraint with the key in consul for groups is that the group key must match the prefix (or name) the consul watch is watching on, a good convention to use is to use a key similar to the ones used with users along the lines of "org/default/groups/<group name>".
 
