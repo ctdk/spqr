@@ -110,7 +110,16 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 			logger.Debugf("this is a %s", handleDesc[handlingType])
 			switch handlingType {
 			case keyPrefix:
-				convUsers, err := convertUsersInterfaceSlice(j["members"].([]interface{}))
+				var commonGroups []string
+				if cg, ok := j["common_groups"].([]interface{}); ok && len(cg) > 0 {
+					commonGroups = make([]string, len(cg))
+					for i, gg := range cg {
+						if c, cok := gg.(string); cok {
+							commonGroups[i] = c
+						}
+					}
+				}
+				convUsers, err := convertUsersInterfaceSlice(j["members"].([]interface{}), commonGroups)
 				if err != nil {
 					logger.Errorf(err.Error())
 					continue
@@ -153,7 +162,7 @@ func handleIncoming(c *consul.Client, stateHolder *state.State, incomingCh chan 
 	}
 }
 
-func convertUsersInterfaceSlice(u []interface{}) ([]*groups.Member, error) {
+func convertUsersInterfaceSlice(u []interface{}, commonGroups []string) ([]*groups.Member, error) {
 	l := len(u)
 	users := make([]*groups.Member, l)
 	for i, v := range u {
@@ -165,6 +174,7 @@ func convertUsersInterfaceSlice(u []interface{}) ([]*groups.Member, error) {
 		m := new(groups.Member)
 		m.Username = s["username"].(string)
 		m.Status = s["status"].(string)
+		m.CommonGroups = commonGroups
 		users[i] = m
 	}
 	return users, nil

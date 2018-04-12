@@ -31,3 +31,29 @@ func SliceEqual(oldSlice []string, NewSlice []string) bool {
 
 	return true
 }
+
+func RemoveDupeSliceString(strSlice []string) []string {
+	for i, u := range strSlice {
+		if i > len(strSlice) {
+			break
+		}
+		j := 1
+		s := 0
+		for {
+			if i+j >= len(strSlice) {
+				break
+			}
+			if u == strSlice[i+j] {
+				j++
+				s++
+			} else {
+				break
+			}
+		}
+		if s == 0 {
+			continue
+		}
+		strSlice = append(strSlice[:i+1], strSlice[i+1+s:]...)
+	}
+	return strSlice
+}

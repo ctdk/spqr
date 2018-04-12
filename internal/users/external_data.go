@@ -19,6 +19,7 @@ package users
 import (
 	"encoding/json"
 	"github.com/ctdk/spqr/internal/groups"
+	"github.com/ctdk/spqr/internal/util"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/tideland/golib/logger"
 	"sort"
@@ -129,8 +130,12 @@ func (c *UserExtDataClient) fetchInfo() error {
 		if member.Status == groups.Disabled {
 			uInfo.Action = Disable
 		}
+		if len(member.CommonGroups) >= 0 {
+			uInfo.Groups = append(uInfo.Groups, member.CommonGroups...)
+		}
 		sort.Strings(uInfo.AuthorizedKeys)
 		sort.Strings(uInfo.Groups)
+		uInfo.Groups = util.RemoveDupeSliceString(uInfo.Groups)
 		uInfo.DoesNotExist = !userExists(uInfo.Username)
 
 		logger.Debugf("got a user info: %+v", uInfo)

@@ -21,6 +21,7 @@ package groups
 import (
 	"errors"
 	"fmt"
+	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
 	"sort"
 )
@@ -28,6 +29,7 @@ import (
 type Member struct {
 	Username string `json:"username"`
 	Status   string `json:"status"`
+	CommonGroups []string `json:"common_groups"`
 }
 
 const (
@@ -85,6 +87,7 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 			if u.Username == list[i+j].Username {
 				j++
 				s++
+				u.CommonGroups = append(u.CommonGroups, list[i+j].CommonGroups...)
 			} else {
 				break
 			}
@@ -103,6 +106,12 @@ func RemoveDupeUsers(groups [][]*Member) ([]*Member, error) {
 
 		list = delTwoPosElements(i+1, s, list)
 	}
+
+	for _, gu := range list {
+		sort.Strings(gu.CommonGroups)
+		gu.CommonGroups = util.RemoveDupeSliceString(gu.CommonGroups)
+	}
+
 	listSort = ""
 	for w, q := range list {
 		listSort = fmt.Sprintf("%s %d %+v", listSort, w, q)

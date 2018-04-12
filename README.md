@@ -56,11 +56,19 @@ The group definition JSON is structured like so:
       "username": "bill",
       "status": "disabled"
     }
+  ],
+  "common_groups": [
+    "quuxers",
+    "borzmins"
   ]
 }
 ```
 
-There's rather less to the groups than there is to the user definitions. There's just an array of hashes named `members`, where each hash has `username` and `status` keys. The available statuses are `enabled` and `disabled`. 
+There's rather less to the groups than there is to the user definitions. Group definitions have an array of hashes named `"members"`, where each hash has `username` and `status` keys. The available statuses are `enabled` and `disabled`.
+
+Optionally, the group definition can also have an array of strings named `"common_groups"`. This array lets you define OS level groups that every user specified in `"members"` should be added to. For example, rather than having to add `sysadmin` to every user's group list in the user definitions, you could define it once in the group definition. The common groups are not mandatory, however; if none are present, or the array is left out entirely, then users will just be created with the groups in their user definition if any. It's also OK to have a group in a user's group definition and in the common groups; duplicates are removed before the user is processed.
+
+**NB:** While duplicate OS groups in user group lists and in the `common_groups` list are fine, if a user is in two spqr groups on the same machine, one with common groups and one without, then that user will be added to/removed from those groups depending on which group was most recently processed. A possible case is where a user is in both the `developers` group and the `ops` group, where `ops` has `sysadmin` in the common group list. If `developers` is updated and processed after `ops` has been processed, then that user will be removed from `sysadmin`. Should `ops` be processed by spqr again, they'd be added back to the group again. To avoid this issue, users should either a) not be put into more than one group that will be present on a machine, b) the user should have those common groups added to their user group list, or c) using the `common_groups` feature should be avoided.
 
 While the only hard constraint with the key in consul for groups is that the group key must match the prefix (or name) the consul watch is watching on, a good convention to use is to use a key similar to the ones used with users along the lines of `org/default/groups/<group name>`.
 
