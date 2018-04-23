@@ -1,2 +1,5 @@
 spqr
 spqr-dev
+*.exe
+spqr_*
+spqr-*
