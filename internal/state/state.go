@@ -16,6 +16,8 @@
 
 package state
 
+// This may need some heavy lifting for Windows.
+
 import (
 	"github.com/edsrzf/mmap-go"
 	"github.com/tideland/golib/logger"
