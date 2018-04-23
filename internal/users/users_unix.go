@@ -21,7 +21,6 @@
 package users
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/rand"
 	"fmt"
@@ -32,7 +31,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -70,32 +68,7 @@ func (u *User) fillInUser() error {
 	return nil
 }
 
-func getAuthorizedKeys(authorizedKeyFile string) ([]string, error) {
-	var authorizedKeys []string
-
-	if aKeys, err := os.Open(authorizedKeyFile); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-	} else {
-		defer aKeys.Close()
-		authKeys := bufio.NewScanner(aKeys)
-		for authKeys.Scan() {
-			authorizedKeys = append(authorizedKeys, authKeys.Text())
-		}
-		if err = authKeys.Err(); err != nil {
-			return nil, err
-		}
-	}
-
-	sort.Strings(authorizedKeys)
-
-	return authorizedKeys, nil
-}
-
 func (u *User) update() error {
-	// TODO: update other fields besides just SSH keys, like shell, various
-	// /etc/passwd entries, etc.
 	if u.updated.authorizedKeys != nil {
 		if err := u.writeOutKeys(u.updated.authorizedKeys); err != nil {
 			return err
@@ -129,81 +102,6 @@ func (u *User) update() error {
 	return nil
 }
 
-func (u *User) writeOutKeys(authorizedKeys []string) error {
-	logger.Debugf("writing out authorized keys for %s", u.Username)
-	if len(authorizedKeys) == 0 {
-		err := fmt.Errorf("no SSH keys given for %s", u.Username)
-		return err
-	}
-
-	authorizedKeyFile := u.authorizedKeyPath()
-	authorizedKeyDir := path.Dir(authorizedKeyFile)
-
-	if _, err := os.Stat(authorizedKeyDir); err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		err = os.Mkdir(authorizedKeyDir, sshDirPerm)
-		if err != nil {
-			return err
-		}
-		sshDir, err := os.Open(authorizedKeyDir)
-		if err != nil {
-			return err
-		}
-		uid, gid, err := u.getUidGid()
-		if err != nil {
-			return err
-		}
-
-		err = sshDir.Chown(uid, gid)
-		if err != nil {
-			return err
-		}
-	}
-
-	tmpAuthKeys, err := u.createTempAuthKeyFile(authorizedKeyDir)
-	if err != nil {
-		return err
-	}
-
-	for _, l := range authorizedKeys {
-		_, err = tmpAuthKeys.WriteString(l)
-		if err != nil {
-			tmpAuthKeys.Close()
-			return err
-		}
-		_, err = tmpAuthKeys.WriteString("\n")
-		if err != nil {
-			tmpAuthKeys.Close()
-			return err
-		}
-	}
-
-	tmpAuthKeyPath := tmpAuthKeys.Name()
-	tmpAuthKeys.Close()
-	err = os.Rename(tmpAuthKeyPath, authorizedKeyFile)
-	if err != nil {
-		return err
-	}
-	logger.Debugf("successfully wrote authorized keys for %s", u.Username)
-	return nil
-}
-
-func (u *User) deleteAuthKeys() error {
-	authKeyPath := u.authorizedKeyPath()
-	err := os.Remove(authKeyPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	logger.Debugf("deleted authorized keys for %s", u.Username)
-	return nil
-}
-
-func (u *User) authorizedKeyPath() string {
-	return path.Join(u.HomeDir, ".ssh", "authorized_keys")
-}
-
 func osNew(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string, authorizedKeys []string) (*User, error) {
 	if homeDir == "" {
 		homeDir = path.Join(DefaultHomeBase, userName)
@@ -229,6 +127,9 @@ func osNew(userName string, fullName string, homeDir string, shell string, actio
 	return newUser, nil
 }
 
+// NOTE: Anything involving UID/GID numbers, chown, and chmod will probably
+// need to be abstracted out and reimplemented with OS-specific versions, even
+// if the rest of the relevant methods can be shared between Unix and Windows.
 func (u *User) createTempAuthKeyFile(baseDir string) (*os.File, error) {
 	uid, gid, err := u.getUidGid()
 	if err != nil {
@@ -269,15 +170,8 @@ func (u *User) getUidGid() (int, int, error) {
 	return uid, gid, nil
 }
 
-func userExists(userName string) bool {
-	u, _ := user.Lookup(userName)
-	if u != nil {
-		return true
-	}
-	return false
-}
-
 // chsh might not be appropriate for dwarwin at least
+// rename this?
 func (u *User) setNoLogin() error {
 	if err := u.passwdManipulate(true); err != nil {
 		return err
