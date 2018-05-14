@@ -1,0 +1,8 @@
+# An example configuration file for spqr.
+
+# log-level = "debug"
+# consul-http-addr = "http://10.0.0.1:8500"
+# user-key-prefix = "org/default/users"
+# log-file = "/var/log/spqr/spqr.log"
+# syslog = false
+# state-file = "/var/lib/spqr/spqr.state"
