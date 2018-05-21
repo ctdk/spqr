@@ -1,0 +1,86 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.10
+
+    working_directory: /go/src/github.com/ctdk/spqr
+
+    environment:
+      TEST_RESULTS: /tmp/test-results
+
+    steps:
+      - checkout
+      - run: mkdir -p $TEST_RESULTS
+
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+
+      - run: sudo apt-get update && sudo apt-get install rpm python-sphinx ruby rubygems ruby-dev -y
+      - run:
+          name: Run 'go test'
+          command: go test -v -race ./... 2>&1 | tee ${TEST_RESULTS}/spqr-test.out
+
+      - run: go build .
+
+      - save_cache:
+          key: v1-pkg-cache
+          paths:
+            - "/go/pkg"
+      - store_artifacts:
+          path: /tmp/test-results
+
+  package:
+    docker:
+      - image: circleci/golang:1.10
+    
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+      - run: sudo apt-get update && sudo apt-get install rpm python-sphinx ruby rubygems ruby-dev -y
+      - run: sudo gem install fpm
+      - run:
+          name: Build packages
+          command: /bin/bash packaging.sh
+          working_directory: ~/project/packaging
+      - store_artifacts:
+          path: ~/project/packaging/artifacts
+      - persist_to_workspace:
+          root: ~/project/packaging
+          paths:
+            - artifacts
+
+  deploy:
+    docker:
+      - image: circleci/golang:1.10
+    
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+      - run: sudo apt-get update && sudo apt-get install rpm python-sphinx ruby rubygems ruby-dev -y
+      - run: sudo gem install package_cloud -v "0.2.43"
+      - run:
+          name: Deploy packages
+          command: /bin/bash deploy.sh
+          working_directory: ~/project/packaging
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - package:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - package
+          filters:
+            branches:
+              only:
+                - releases
