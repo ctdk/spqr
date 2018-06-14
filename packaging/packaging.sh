@@ -24,7 +24,7 @@ done
 mkdir -p $BUILD/bin
 
 cd ..
-go build -o $BUILD/bin
+go build -ldflags "-X github.com/ctdk/spqr/config.GitHash=$GIT_HASH" -o $BUILD/bin
 
 # Get this one out of the way first, since I somewhat strangely need the CentOS
 # 6 / Amazon Linux(v1) package before anything else.
