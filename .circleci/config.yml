@@ -32,7 +32,9 @@ jobs:
 
   package:
     docker:
-      - image: circleci/golang:1.10
+      - image: ctdk/circleci:latest
+
+    working_directory: /go/src/github.com/ctdk/spqr
     
     steps:
       - checkout
@@ -42,17 +44,19 @@ jobs:
       - run:
           name: Build packages
           command: /bin/bash packaging.sh
-          working_directory: ~/project/packaging
+          working_directory: /go/src/github.com/ctdk/spqr/packaging
       - store_artifacts:
-          path: ~/project/packaging/artifacts
+          path: /go/src/github.com/ctdk/spqr/packaging/artifacts
       - persist_to_workspace:
-          root: ~/project/packaging
+          root: /go/src/github.com/ctdk/spqr/packaging
           paths:
             - artifacts
 
   deploy:
     docker:
-      - image: circleci/golang:1.10
+      - image: ctdk/circleci:latest
+
+    working_directory: /go/src/github.com/ctdk/spqr
     
     steps:
       - checkout
@@ -62,7 +66,7 @@ jobs:
       - run:
           name: Deploy packages
           command: /bin/bash deploy.sh
-          working_directory: ~/project/packaging
+          working_directory: /go/src/github.com/ctdk/spqr/packaging
 
 workflows:
   version: 2
