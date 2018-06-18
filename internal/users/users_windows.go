@@ -237,7 +237,10 @@ func (u *User) setSshDirOwnership(dir string) error {
 		// Find what these groups would actually be called, hrm.
 		acl.GrantName(windows.GENERIC_READ|windows.GENERIC_WRITE, "Administrators"),
 		acl.GrantName(windows.GENERIC_READ|windows.GENERIC_WRITE, "System"),
-		acl.DenyName(windows.GENERIC_ALL, "Everyone")
+		acl.DenyName(windows.GENERIC_ALL, "Everyone"),
+	); err != nil {
+		return err
+	}
 	return nil
 }
 
