@@ -1,5 +1,7 @@
-spqr
+/spqr
 spqr-dev
 *.exe
 spqr_*
 spqr-*
+packaging/build
+packaging/artifacts
