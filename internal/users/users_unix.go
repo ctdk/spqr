@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
-	"math/big"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -37,36 +37,9 @@ import (
 
 const sshDirPerm = 0700
 const authKeyPerm = 0644
-const maxTmpDirNumBase int64 = 0xFFFFFFFF
-
-var maxTmpDirNum *big.Int
 
 const DefaultShell = "/bin/bash"
 const DefaultHomeBase = "/home"
-
-func init() {
-	maxTmpDirNum = big.NewInt(maxTmpDirNumBase)
-}
-
-// get the user's shell and ssh keys
-func (u *User) fillInUser() error {
-	shell, err := getShell(u.Username)
-	if err != nil {
-		return err
-	}
-	u.Shell = shell
-
-	authorizedKeyFile := u.authorizedKeyPath()
-
-	authorizedKeys, err := getAuthorizedKeys(authorizedKeyFile)
-	if err != nil {
-		return err
-	}
-
-	u.AuthorizedKeys = authorizedKeys
-
-	return nil
-}
 
 func (u *User) update() error {
 	if u.updated.authorizedKeys != nil {
@@ -102,29 +75,18 @@ func (u *User) update() error {
 	return nil
 }
 
-func osNew(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string, authorizedKeys []string) (*User, error) {
-	if homeDir == "" {
-		homeDir = path.Join(DefaultHomeBase, userName)
-	}
-	if shell == "" {
-		shell = DefaultShell
-	}
-
-	// check for an existing user
-	xu, _ := user.Lookup(userName)
-	if xu != nil {
-		err := fmt.Errorf("user %s already exists", userName)
-		return nil, err
+// Golang and Windows groups don't seem to mesh real well yet, so moving the
+// group specific (and any other Unixy specific bits) here.
+func (u *User) disable() error {
+	err = u.clearExtraGroups()
+	if err != nil {
+		return err
 	}
 
-	n := new(user.User)
-	newUser := &User{n, nil, shell, action, groups, "", true, true, nil}
-	newUser.Username = userName
-	newUser.Name = fullName
-	newUser.HomeDir = homeDir
-	newUser.AuthorizedKeys = authorizedKeys
-
-	return newUser, nil
+	err = u.killProcesses()
+	if err != nil {
+		return err
+	}
 }
 
 // NOTE: Anything involving UID/GID numbers, chown, and chmod will probably
@@ -136,13 +98,7 @@ func (u *User) createTempAuthKeyFile(baseDir string) (*os.File, error) {
 		return nil, err
 	}
 
-	n, err := rand.Int(rand.Reader, maxTmpDirNum)
-	if err != nil {
-		return nil, err
-	}
-
-	tmpAuthKeyPath := path.Join(baseDir, strings.Join([]string{"authorized_keys", n.String()}, "-"))
-	tmpAuthKeyFile, err := os.Create(tmpAuthKeyPath)
+	tmpAuthKeyFile, err := ioutil.TempFile(baseDir, "authorized_keys")
 	if err != nil {
 		return nil, err
 	}
@@ -170,9 +126,25 @@ func (u *User) getUidGid() (int, int, error) {
 	return uid, gid, nil
 }
 
+func (u *User) setSshDirOwnership(dir string) error {
+	sshDir, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	uid, gid, err := u.getUidGid()
+	if err != nil {
+		return err
+	}
+	err = sshDir.Chown(uid, gid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // chsh might not be appropriate for dwarwin at least
 // rename this?
-func (u *User) setNoLogin() error {
+func (u *User) deactivate() error {
 	if err := u.passwdManipulate(true); err != nil {
 		return err
 	}
@@ -202,35 +174,7 @@ func (u *User) changeShell(shell string) error {
 	return nil
 }
 
-func (u *User) updateInfo(uEntry *UserInfo) error {
-	// Set the action, eh
-	u.Action = uEntry.Action
-
-	// bug out if the user's disabled or will be shortly
-	if u.Action == Disable {
-		return nil
-	}
-
-	uUp := new(userUpdated)
-
-	// Low hanging fruit first - check if the shell and ssh keys need to be
-	// changed.
-	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
-		logger.Debugf("shell different for %s: o %s n %s", u.Username, u.Shell, uEntry.Shell)
-		uUp.shell = uEntry.Shell
-		u.changed = true
-	}
-
-	oldKeys, err := getAuthorizedKeys(u.authorizedKeyPath())
-	if err != nil {
-		return err
-	}
-	if !util.SliceEqual(oldKeys, uEntry.AuthorizedKeys) {
-		logger.Debugf("authorized keys for %s didn't match", u.Username)
-		uUp.authorizedKeys = uEntry.AuthorizedKeys
-		u.changed = true
-	}
-
+func (u *User) updateGroupInfo(uEntry *UserInfo, uUp *userUpdated) error {
 	if !util.SliceEqual(uEntry.Groups, u.Groups) {
 		logger.Debugf("groups didn't match for %s: o '%s' n '%s'", u.Username, strings.Join(u.Groups, ","), strings.Join(uEntry.Groups, ","))
 		uUp.groups = uEntry.Groups
@@ -243,17 +187,6 @@ func (u *User) updateInfo(uEntry *UserInfo) error {
 		u.changed = true
 	}
 
-	if (uEntry.Name != "") && (uEntry.Name != u.Name) {
-		logger.Debugf("Changing %s's full name from '%s' to '%s'.", u.Username, u.Name, uEntry.Name)
-		uUp.name = uEntry.Name
-		u.changed = true
-	}
-
-	if u.changed == true {
-		logger.Debugf("user %s has information to update", u.Username)
-		u.updated = uUp
-	}
-
 	return nil
 }
 
@@ -263,6 +196,51 @@ func (u *User) getPrimaryGroup() (string, error) {
 		return "", err
 	}
 	return gr.Name, nil
+}
+
+func (u *User) reviewGroups(existingGroups map[string]bool) error {
+	for _, g := range u.Groups {
+		if !existingGroups[g] {
+			if err := checkOrCreateGroup(g); err != nil {
+				return err
+			}
+			existingGroups[g] = true
+		}
+	}
+	return nil
+}
+
+func (u *User) fillInGroups() error {
+	pg, err := u.getPrimaryGroup()
+	logger.Debugf("primary group for %s: '%s'", u.Username, pg)
+	if err != nil {
+		return nil, err
+	}
+	u.PrimaryGroup = pg
+
+	gids, _ := u.GroupIds()
+
+	for _, g := range gids {
+		gr, _ := user.LookupGroupId(g)
+		if gr.Name == u.PrimaryGroup {
+			continue
+		}
+		u.Groups = append(u.Groups, gr.Name)
+	}
+	sort.Strings(u.Groups)
+	return nil
+}
+
+func checkOrCreateGroup(name string) error {
+	logger.Debugf("looking up group %s", name)
+	gPresent, _ := user.LookupGroup(name)
+	if gPresent == nil {
+		err := MakeNewGroup(name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getDefaultShell() string {

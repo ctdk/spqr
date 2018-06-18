@@ -21,6 +21,7 @@ package users
 import (
 	"bufio"
 	"fmt"
+	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
 	"path"
 	"os"
@@ -66,12 +67,34 @@ type userUpdated struct {
 	primaryGroup   string
 	shell          string
 	authorizedKeys []string
+	reenable bool
 }
 
-// New creates a new user. It's a pass-through to an OS-specific function, see
-// the appropriate one for details.
+// New creates a new user. Some OS-specific constants are defined in the
+// relevant go files for that platform.
 func New(userName string, fullName string, homeDir string, shell string, action UserAction, groups []string, authorizedKeys []string) (*User, error) {
-	return osNew(userName, fullName, homeDir, shell, action, groups, authorizedKeys)
+	// check for an existing user
+	xu, _ := user.Lookup(userName)
+	if xu != nil {
+		err := fmt.Errorf("user %s already exists", userName)
+		return nil, err
+	}
+
+	if homeDir == "" {
+		homeDir = path.Join(DefaultHomeBase, userName)
+	}
+	if shell == "" {
+		shell = DefaultShell
+	}
+
+	n := new(user.User)
+	newUser := &User{n, nil, shell, action, groups, "", true, true, nil}
+	newUser.Username = userName
+	newUser.Name = fullName
+	newUser.HomeDir = homeDir
+	newUser.AuthorizedKeys = authorizedKeys
+
+	return newUser, nil
 }
 
 // Get a user, if it exists.
@@ -88,23 +111,10 @@ func Get(username string) (*User, error) {
 		return nil, err
 	}
 
-	pg, err := u.getPrimaryGroup()
-	logger.Debugf("primary group for %s: '%s'", u.Username, pg)
+	err = u.fillInGroups()
 	if err != nil {
 		return nil, err
 	}
-	u.PrimaryGroup = pg
-
-	gids, _ := u.GroupIds()
-
-	for _, g := range gids {
-		gr, _ := user.LookupGroupId(g)
-		if gr.Name == u.PrimaryGroup {
-			continue
-		}
-		u.Groups = append(u.Groups, gr.Name)
-	}
-	sort.Strings(u.Groups)
 
 	return u, nil
 }
@@ -118,7 +128,7 @@ func (u *User) Update() error {
 }
 
 func (u *User) Disable() error {
-	err := u.setNoLogin()
+	err := u.deactivate()
 	if err != nil {
 		return err
 	}
@@ -128,12 +138,8 @@ func (u *User) Disable() error {
 		return err
 	}
 
-	err = u.clearExtraGroups()
-	if err != nil {
-		return err
-	}
-
-	err = u.killProcesses()
+	// OS-specific bits.
+	err = u.disable()
 	if err != nil {
 		return err
 	}
@@ -151,14 +157,10 @@ func ProcessUsers(userList []*User) error {
 	existingGroups := make(map[string]bool)
 
 	for _, u := range userList {
-		// Check for OS groups and create them if needed
-		for _, g := range u.Groups {
-			if !existingGroups[g] {
-				if err := checkOrCreateGroup(g); err != nil {
-					return err
-				}
-				existingGroups[g] = true
-			}
+		// Check for OS groups and create them if needed on systems
+		// where that'll work.
+		if err := u.reviewGroups(existingGroups); err != nil {
+			return err
 		}
 
 		if u.notExist && u.Action != Disable {
@@ -179,18 +181,6 @@ func ProcessUsers(userList []*User) error {
 			if err != nil {
 				return err
 			}
-		}
-	}
-	return nil
-}
-
-func checkOrCreateGroup(name string) error {
-	logger.Debugf("looking up group %s", name)
-	gPresent, _ := user.LookupGroup(name)
-	if gPresent == nil {
-		err := MakeNewGroup(name)
-		if err != nil {
-			return err
 		}
 	}
 	return nil
@@ -248,20 +238,13 @@ func (u *User) writeOutKeys(authorizedKeys []string) error {
 		if !os.IsNotExist(err) {
 			return err
 		}
+
 		err = os.Mkdir(authorizedKeyDir, sshDirPerm)
 		if err != nil {
 			return err
 		}
-		sshDir, err := os.Open(authorizedKeyDir)
-		if err != nil {
-			return err
-		}
-		uid, gid, err := u.getUidGid()
-		if err != nil {
-			return err
-		}
-
-		err = sshDir.Chown(uid, gid)
+		
+		err = u.setSshDirOwnership(authorizedKeyDir)
 		if err != nil {
 			return err
 		}
@@ -307,4 +290,80 @@ func (u *User) deleteAuthKeys() error {
 
 func (u *User) authorizedKeyPath() string {
 	return path.Join(u.HomeDir, ".ssh", "authorized_keys")
+}
+
+// get the user's shell and ssh keys
+func (u *User) fillInUser() error {
+	shell, err := getShell(u.Username)
+	if err != nil {
+		return err
+	}
+	u.Shell = shell
+
+	authorizedKeyFile := u.authorizedKeyPath()
+
+	authorizedKeys, err := getAuthorizedKeys(authorizedKeyFile)
+	if err != nil {
+		return err
+	}
+
+	u.AuthorizedKeys = authorizedKeys
+
+	return nil
+}
+
+func (u *User) updateInfo(uEntry *UserInfo) error {
+	r := u.Action == Disable && uEntry.Action == Create
+	// Set the action, eh
+	u.Action = uEntry.Action
+
+	// bug out if the user's disabled or will be shortly
+	if u.Action == Disable {
+		return nil
+	}
+
+	uUp := new(userUpdated)
+
+	// Only meaningful under Windows
+	if r {
+		uUp.reenable = r
+		u.changed = true
+	}
+
+	// Low hanging fruit first - check if the shell and ssh keys need to be
+	// changed.
+	if uEntry.Shell != "" && u.Shell != uEntry.Shell {
+		logger.Debugf("shell different for %s: o %s n %s", u.Username, u.Shell, uEntry.Shell)
+		uUp.shell = uEntry.Shell
+		u.changed = true
+	}
+
+	oldKeys, err := getAuthorizedKeys(u.authorizedKeyPath())
+	if err != nil {
+		return err
+	}
+
+	if !util.SliceEqual(oldKeys, uEntry.AuthorizedKeys) {
+		logger.Debugf("authorized keys for %s didn't match", u.Username)
+		uUp.authorizedKeys = uEntry.AuthorizedKeys
+		u.changed = true
+	}
+
+	// The group updates may return here, but until that's sorted out
+	// Windows-side, it's in the unix updateGroupInfo() method.
+
+	err = u.updateGroupInfo(uEntry, uUp)
+
+	if (uEntry.Name != "") && (uEntry.Name != u.Name) {
+		logger.Debugf("Changing %s's full name from '%s' to '%s'.", u.Username, u.Name, uEntry.Name)
+		uUp.name = uEntry.Name
+		u.changed = true
+	}
+
+	if u.changed == true {
+		logger.Debugf("user %s has information to update", u.Username)
+		u.updated = uUp
+	}
+
+	return nil
 }
