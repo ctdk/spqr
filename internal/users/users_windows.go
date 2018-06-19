@@ -171,7 +171,7 @@ func getShell(username string) (string, error) {
 	// At this time, it's not real obvious how to set individual user shells
 	// with Windows OpenSSH. For the time being, return whatever the default
 	// shell is.
-	return getDefaultShell(), notImpErr
+	return getDefaultShell(), nil
 }
 
 func (u *User) clearExtraGroups() error {
