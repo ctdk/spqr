@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/ctdk/spqr/internal/util"
 	"github.com/tideland/golib/logger"
-	"path"
 	"os"
 	"os/user"
+	"path"
 	"sort"
 )
 
@@ -67,7 +67,7 @@ type userUpdated struct {
 	primaryGroup   string
 	shell          string
 	authorizedKeys []string
-	reenable bool
+	reenable       bool
 }
 
 // New creates a new user. Some OS-specific constants are defined in the
@@ -243,7 +243,7 @@ func (u *User) writeOutKeys(authorizedKeys []string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		err = u.setSshDirOwnership(authorizedKeyDir)
 		if err != nil {
 			return err

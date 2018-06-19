@@ -27,8 +27,8 @@ import (
 )
 
 type Member struct {
-	Username string `json:"username"`
-	Status   string `json:"status"`
+	Username     string   `json:"username"`
+	Status       string   `json:"status"`
 	CommonGroups []string `json:"common_groups"`
 }
 

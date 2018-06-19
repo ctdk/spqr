@@ -194,7 +194,7 @@ func (u *User) updateName() error {
 		ferr := fmt.Errorf("Error received while trying to disable user %s: %s", u.Username, err.Error())
 		return ferr
 	}
-	
+
 	return nil
 }
 
@@ -213,7 +213,7 @@ func (u *User) createTempAuthKeyFile(baseDir string) (*os.File, error) {
 		tmpAuthKeyFile.Name(),
 		false,
 		false,
-		acl.GrantName(windows.GENERIC_READ|windows.GENERIC_WRITE,u.Username),
+		acl.GrantName(windows.GENERIC_READ|windows.GENERIC_WRITE, u.Username),
 	)
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func runNetCmd(netUserArgs []string) error {
 	netUser.Stderr = &stderr
 
 	if err := netUser.Run(); err != nil {
-		ferr := errors.New(strings.Join([]string{err.Error(),stderr.String()}, " -- "))
+		ferr := errors.New(strings.Join([]string{err.Error(), stderr.String()}, " -- "))
 		return ferr
 	}
 	return nil
@@ -285,27 +285,28 @@ func runNetCmd(netUserArgs []string) error {
 const randStrLen = 12
 
 var src = rand.NewSource(time.Now().UnixNano())
+
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
-    letterIdxBits = 6                    // 6 bits to represent a letter index
-    letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-    letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
 func randStringBytesMaskImprSrc(n int) string {
-    b := make([]byte, n)
-    // A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
-    for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-        if remain == 0 {
-            cache, remain = src.Int63(), letterIdxMax
-        }
-        if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-            b[i] = letterBytes[idx]
-            i--
-        }
-        cache >>= letterIdxBits
-        remain--
-    }
+	b := make([]byte, n)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
 
-    return string(b)
+	return string(b)
 }
