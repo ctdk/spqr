@@ -53,21 +53,58 @@ var notImpErr = errors.New("This Windows functionality is not implemented yet.")
 func (u *User) osCreateUser() error {
 	dummyPass := genRandomPassword()
 
-	netUserArgs := []string{"USER", u.Username, dummyPass, "/ADD"}
-
-	if u.Name != "" {
-		netUserArgs = append(netUserArgs, fmt.Sprintf(`/FULLNAME:"%s"`, u.Name))
+	fullName := u.Name
+	if fullName == "" {
+		fullName = u.Username
 	}
-	if u.HomeDir != "" {
-		netUserArgs = append(netUserArgs, fmt.Sprintf("/HOMEDIR:%s", u.HomeDir))
+	nfullName := windows.UTF16PtrFromString(fullName)
+	nuComment := windows.UTF16PtrFromString("Managed by spqr")
+	nuname := windows.UTF16PtrFromString(u.Username)
+	npass := windows.UTF16PtrFromString(dummyPass)
+	newUserInfo := userInfo2{
+		name: nuname,
+		password: npass,
+		fullName: nfullName,
+		comment: nuComment,
+		acctExpires: dword(timeqForever),
+		priv: USER_PRIV_USER, // TODO: investigate being able to 
+				      // set this to _ADMIN
+		flags: UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD,
+	}
+	ret, _, err := userAdd.Call(uintptr(0), uintptr(userInfoLevel), uintptr(unsafe.Pointer(&newUserInfo)), uintptr(0))
+	if ret != 0 {
+		logger.Errorf("failed to add user %s, bailing with error '%s'", u.Username, err.Error())
+		return err
 	}
 
-	if err := runNetCmd(netUserArgs); err != nil {
-		ferr := fmt.Errorf("Error received while trying to create user %s: %s", u.Username, err.Error())
-		return ferr
+	// Now the fake login.
+	//
+	// Don't forget - we'll need to close the handles.
+	var lHandle windows.Handle
+	logonUserDomain, _ := windows.UTF16PtrFromString(".")
+
+	retl, _, err := logonUser.Call(uintptr(unsafe.Pointer(nuname)), uintptr(unsafe.Pointer(logonUserDomain)), uintptr(unsafe.Pointer(npass)), uintptr(LOGON32_LOGON_BATCH), uintptr(LOGON32_PROVIDER_DEFAULT), uintptr(unsafe.Pointer(&lHandle)))
+	// Sometimes 0 is success. Sometimes it is a failure. Thanks, y'all.
+	if retl == 0 {
+		logonErr := fmt.Errorf("Error doing simulated login with user %s: ret %d, msg: '%d'", u.Name, ret, err.Error())
+		logger.Errorf(logonErr)
+		return logonErr
 	}
 
-	// TODO: groups.
+	// And load the profile. This is what creates the home directory.
+
+	var pinfo profileInfo
+	pinfo.dwSize = dword(unsafe.Sizeof(pinfo))
+	pinfo.lpUserName = nuname
+	rlp, _, err := loadUserProfile.Call(uintptr(lHandle), uintptr(unsafe.Pointer(&pinfo)))
+
+	// This may not be a failure-failure; don't bail if there's an err for
+	// now.
+	if rlp == 0 {
+		logger.Errorf("This one is weird - it claims a failure, but works...? Bizarre. Ret is %d, msg is: '%s'", rlp, err.Error())
+	}
+
+	// TODO: groups. This depends on if we *can* do groups, though.
 
 	nu, err := Get(u.Username)
 	if err != nil {
