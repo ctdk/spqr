@@ -28,13 +28,14 @@ import (
 var (
 	netApi32 = windows.NewLazyDLL("netapi32.dll")
 	advApi32 = windows.NewLazyDLL("advapi32.dll")
+	kernel32 = windows.NewLazyDLL("kernel32.dll")
 	userEnv = windows.NewLazyDLL("userenv.dll")
 	userGetInfo = netApi32.NewProc("NetUserGetInfo")
 	userAdd = netApi32.NewProc("NetUserAdd")
 	logonUser = advApi32.NewProc("LogonUserW")
- 	lsaAddAccountRights = advApi32.NewProc("LsaAddAccountRights")
 	loadUserProfile = userEnv.NewProc("LoadUserProfileW")
 	unloadUserProfile = userEnv.NewProc("UnloadUserProfile")
+	closeHandle = kernel32.NewProc("CloseHandle")
 )
 
 type dword uint32

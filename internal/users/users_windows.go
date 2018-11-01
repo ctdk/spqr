@@ -72,7 +72,7 @@ func (u *User) osCreateUser() error {
 		flags: UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD,
 	}
 	ret, _, err := userAdd.Call(uintptr(0), uintptr(userInfoLevel), uintptr(unsafe.Pointer(&newUserInfo)), uintptr(0))
-	if ret != 0 {
+	if ret != NERR_Success {
 		logger.Errorf("failed to add user %s, bailing with error '%s'", u.Username, err.Error())
 		return err
 	}
@@ -101,8 +101,21 @@ func (u *User) osCreateUser() error {
 	// This may not be a failure-failure; don't bail if there's an err for
 	// now.
 	if rlp == 0 {
-		logger.Errorf("This one is weird - it claims a failure, but works...? Bizarre. Ret is %d, msg is: '%s'", rlp, err.Error())
+		lperr := fmt.Errorf("Error loading profile. Ret is %d, msg is: '%s'", rlp, err.Error())
+		logger.Errorf(lperr)
+		return lperr
 	}
+
+	defer func() {
+		r, _, rerr := unloadUserProfile.Call(uintptr(lHandle), uintptr(pinfo.hProfile))
+		if r == 0 {
+			logger.Errorf("unload user profile failed: %s", rerr.Error())
+		}
+		c, _, cerr := closeHandle.Call(uintptr(lHandle))
+		if c == 0 {
+			logger.Errorf("closeHandle failed: %s", cerr.Error())
+		}
+	}()
 
 	// TODO: groups. This depends on if we *can* do groups, though.
 
