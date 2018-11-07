@@ -159,7 +159,15 @@ func (u *User) update() error {
 
 // Windows specific disabling account bits go here, when they come along.
 func (u *User) disable() error {
-	return nil
+	nuname := windows.UTF16PtrFromString(u.Username)
+	uinfo := userInfo1008{
+		flags: UF_ACCOUNTDISABLE,
+	}
+	ret, _, err := userSetInfo(uintptr(0), nuname, uintptr(enableDisableLevel), uintptr(unsafe.Pointer(&uinfo)), uintptr(0))
+	if ret != NERR_Success {
+		logger.Errorf("failed to disable user %s, bailing with error '%s'", u.Username, err.Error())
+		return err
+	}
 }
 
 func (u *User) active(enable bool) error {

@@ -31,6 +31,7 @@ var (
 	kernel32 = windows.NewLazyDLL("kernel32.dll")
 	userEnv = windows.NewLazyDLL("userenv.dll")
 	userGetInfo = netApi32.NewProc("NetUserGetInfo")
+	userSetInfo = netApi32.NewProc("NetUserSetInfo")
 	userAdd = netApi32.NewProc("NetUserAdd")
 	logonUser = advApi32.NewProc("LogonUserW")
 	loadUserProfile = userEnv.NewProc("LoadUserProfileW")
@@ -66,6 +67,10 @@ type userInfo2 struct {
 	logonServer lpwstr
 	countryCode dword
 	codePage dword
+}
+
+type userInfo1008 struct {
+	flags dword
 }
 
 type profileInfo struct {
@@ -125,6 +130,7 @@ const (
 	LOGON32_PROVIDER_WINNT50 = 3
 
 	userInfoLevel = 2
+	enableDisableLevel = 1008
 
 	NERR_Success = 0
 )
