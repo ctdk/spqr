@@ -21,6 +21,7 @@ package processes
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -38,8 +39,7 @@ func killUserProcesses(username string) error {
 		return err
 	}
 
-	var taskkillArgs []string
-
+	taskkillArgs := []string{"/f", "/fi", fmt.Sprintf("USERNAME eq %s", username)}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
