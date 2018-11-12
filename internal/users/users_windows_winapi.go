@@ -23,6 +23,7 @@ package users
 
 import (
 	"golang.org/x/sys/windows"
+	"unsafe"
 )
 
 var (

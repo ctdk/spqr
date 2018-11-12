@@ -37,6 +37,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 // Obviously these need to change drastically
@@ -57,10 +58,10 @@ func (u *User) osCreateUser() error {
 	if fullName == "" {
 		fullName = u.Username
 	}
-	nfullName := windows.UTF16PtrFromString(fullName)
-	nuComment := windows.UTF16PtrFromString("Managed by spqr")
-	nuname := windows.UTF16PtrFromString(u.Username)
-	npass := windows.UTF16PtrFromString(dummyPass)
+	nfullName, _ := windows.UTF16PtrFromString(fullName)
+	nuComment, _ := windows.UTF16PtrFromString("Managed by spqr")
+	nuname, _ := windows.UTF16PtrFromString(u.Username)
+	npass, _ := windows.UTF16PtrFromString(dummyPass)
 	newUserInfo := userInfo2{
 		name: nuname,
 		password: npass,
@@ -87,7 +88,7 @@ func (u *User) osCreateUser() error {
 	// Sometimes 0 is success. Sometimes it is a failure. Thanks, y'all.
 	if retl == 0 {
 		logonErr := fmt.Errorf("Error doing simulated login with user %s: ret %d, msg: '%d'", u.Name, ret, err.Error())
-		logger.Errorf(logonErr)
+		logger.Errorf(logonErr.Error())
 		return logonErr
 	}
 
@@ -102,7 +103,7 @@ func (u *User) osCreateUser() error {
 	// now.
 	if rlp == 0 {
 		lperr := fmt.Errorf("Error loading profile. Ret is %d, msg is: '%s'", rlp, err.Error())
-		logger.Errorf(lperr)
+		logger.Errorf(lperr.Error())
 		return lperr
 	}
 
@@ -159,15 +160,16 @@ func (u *User) update() error {
 
 // Windows specific disabling account bits go here, when they come along.
 func (u *User) disable() error {
-	nuname := windows.UTF16PtrFromString(u.Username)
+	nuname, _ := windows.UTF16PtrFromString(u.Username)
 	uinfo := userInfo1008{
 		flags: UF_ACCOUNTDISABLE,
 	}
-	ret, _, err := userSetInfo(uintptr(0), nuname, uintptr(enableDisableLevel), uintptr(unsafe.Pointer(&uinfo)), uintptr(0))
+	ret, _, err := userSetInfo.Call(uintptr(0), uintptr(unsafe.Pointer(nuname)), uintptr(enableDisableLevel), uintptr(unsafe.Pointer(&uinfo)), uintptr(0))
 	if ret != NERR_Success {
 		logger.Errorf("failed to disable user %s, bailing with error '%s'", u.Username, err.Error())
 		return err
 	}
+	return nil
 }
 
 func (u *User) active(enable bool) error {
