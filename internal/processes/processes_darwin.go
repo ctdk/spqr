@@ -23,6 +23,10 @@ import (
 	"os"
 )
 
+func killUserProcesses(uid int) ([]*os.Process, error) {
+	return nil, errors.New("Can't kill processes in darwin either (not sure how you managed to get here, for that matter.")
+}
+
 func findUserProcesses(uid int) ([]*os.Process, error) {
 	return nil, errors.New("Can't look for processes in darwin either (not sure how you managed to get here, for that matter.")
 }

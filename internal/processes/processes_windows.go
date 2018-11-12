@@ -19,12 +19,37 @@
 package processes
 
 import (
+	"bytes"
 	"errors"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 var notImpErr = errors.New("Windows functionality is not implemented yet.")
 
 func findUserProcesses(uid string) ([]*os.Process, error) {
 	return nil, notImpErr
+}
+
+func killUserProcesses(username string) error {
+	taskkillCmdPath, err := exec.LookPath("TASKKILL")
+	if err != nil {
+		return err
+	}
+
+	var taskkillArgs []string
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	taskkill := exec.Command(taskkillCmdPath, taskkillArgs...)
+	taskkill.Stdout = &stdout
+	taskkill.Stderr = &stderr
+
+	if err := taskkill.Run(); err != nil {
+		ferr := errors.New(strings.Join([]string{err.Error(), stderr.String()}, " -- "))
+		return ferr
+	}
+	return nil
 }

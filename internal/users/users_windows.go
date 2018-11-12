@@ -160,13 +160,29 @@ func (u *User) update() error {
 
 // Windows specific disabling account bits go here, when they come along.
 func (u *User) disable() error {
+	return u.setLevel1008(disableFlags)
+}
+
+func (u *User) enable() error {
+	return u.setLevel1008(enableFlags)
+}
+
+func (u *User) setLevel1008(accessFlags dword) error {
 	nuname, _ := windows.UTF16PtrFromString(u.Username)
 	uinfo := userInfo1008{
-		flags: UF_ACCOUNTDISABLE,
+		flags: accessFlags,
 	}
+
+	var verb string
+	if accessFlags == disableFlags {
+		verb = "disable"
+	} else {
+		verb = "enable"
+	}
+
 	ret, _, err := userSetInfo.Call(uintptr(0), uintptr(unsafe.Pointer(nuname)), uintptr(enableDisableLevel), uintptr(unsafe.Pointer(&uinfo)), uintptr(0))
 	if ret != NERR_Success {
-		logger.Errorf("failed to disable user %s, bailing with error '%s'", u.Username, err.Error())
+		logger.Errorf("failed to %s user %s, bailing with error '%s'", verb, u.Username, err.Error())
 		return err
 	}
 	return nil
@@ -192,11 +208,11 @@ func (u *User) active(enable bool) error {
 }
 
 func (u *User) deactivate() error {
-	return u.active(false)
+	return u.disable()
 }
 
 func (u *User) reactivate() error {
-	return u.active(true)
+	return u.enable()
 }
 
 func (u *User) changeShell(shell string) error {

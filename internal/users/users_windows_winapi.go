@@ -136,6 +136,11 @@ const (
 	NERR_Success = 0
 )
 
+const (
+	enableFlags = UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD
+	disableFlags = UF_ACCOUNTDISABLE
+)
+
 const SE_BATCH_LOGON_NAME = "SeBatchLogonRight"
 
 const (

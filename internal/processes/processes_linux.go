@@ -34,6 +34,25 @@ const (
 
 var statusUid = []byte("Uid:")
 
+func killUserProcesses(uid string) error {
+	// awfully OS specific, so...
+	procs, err := findUserProcesses(uid)
+	if err != nil {
+		return err
+	}
+	logger.Debugf("Found %d processes for uid '%s' in round %d", len(procs), uid, i+1)
+
+	if len(procs) == 0 {
+		return nil
+	}
+
+	// now kill the processes
+	for _, p := range procs {
+		p.Kill()
+	}
+	return nil
+}
+
 func findUserProcesses(uid string) ([]*os.Process, error) {
 	// start looking for real
 	procdir, err := os.Open("/proc")

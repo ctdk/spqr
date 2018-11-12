@@ -16,27 +16,12 @@
 
 package processes
 
-import (
-	"github.com/tideland/golib/logger"
-)
-
 func KillUserProcesses(uid string) error {
 	// Go through the process list twice, to be on the safe-ish side
 	for i := 0; i < 2; i++ {
-		// awfully OS specific, so...
-		procs, err := findUserProcesses(uid)
+		err := killUserProcesses(uid)
 		if err != nil {
 			return err
-		}
-		logger.Debugf("Found %d processes for uid '%s' in round %d", len(procs), uid, i+1)
-
-		if len(procs) == 0 {
-			return nil
-		}
-
-		// now kill the processes
-		for _, p := range procs {
-			p.Kill()
 		}
 	}
 	return nil
